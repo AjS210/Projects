@@ -13,9 +13,71 @@ export const FULL_FRAME = [
   [0, 1],
 ];
 const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+const MIN_TURN = 0.003;
+const turnAt = (frame, i) => cross(frame[i], frame[(i + 1) % 4], frame[(i + 2) % 4]);
 export const goodFrame = (frame) =>
-  frame?.length === 4 &&
-  frame.every((p, i) => cross(p, frame[(i + 1) % 4], frame[(i + 2) % 4]) > 0.003);
+  frame?.length === 4 && frame.every((_, i) => turnAt(frame, i) > MIN_TURN);
+
+// Move both ends of a side by the same amount; an angled photo must not jump
+// to a different perspective on the first nudge. Stop BOTH ends if either hits
+// the photo boundary or the frame would fold over the opposite side.
+const X_PARTNER = [3, 2, 1, 0],
+  Y_PARTNER = [1, 0, 3, 2];
+function shiftPair(frame, corner, axis, requested) {
+  if (!requested) return frame;
+  const partner = (axis === 0 ? X_PARTNER : Y_PARTNER)[corner];
+  const across = axis === 0 ? Y_PARTNER : X_PARTNER;
+  const a = frame[corner][axis],
+    b = frame[partner][axis];
+  let delta = clamp(requested, -Math.min(a, b), 1 - Math.max(a, b));
+  const inward = (axis === 0 ? corner === 0 || corner === 3 : corner < 2) ? 1 : -1;
+  if (inward * delta > 0) {
+    const gap = Math.min(
+      inward * (frame[across[corner]][axis] - a),
+      inward * (frame[across[partner]][axis] - b),
+    );
+    delta = inward * Math.min(inward * delta, Math.max(0, gap - 0.02));
+  }
+  if (!delta) return frame;
+  const shifted = (d) =>
+    frame.map((p, i) => {
+      if (i !== corner && i !== partner) return p;
+      return axis === 0 ? [p[0] + d, p[1]] : [p[0], p[1] + d];
+    });
+  const next = shifted(delta);
+  if (goodFrame(next)) return next;
+
+  // For a shift along just one axis each corner's signed turn is linear
+  // in the shift. Stop at the first limiting corner, not back at drag start.
+  let fraction = 1;
+  for (let i = 0; i < 4; i++) {
+    const before = turnAt(frame, i),
+      after = turnAt(next, i);
+    const floor = Math.min(before, MIN_TURN + 1e-8); // tiny detected boards can still grow
+    if (after < floor) fraction = Math.min(fraction, (before - floor) / (before - after));
+  }
+  return fraction === 1 ? next : fraction > 0 ? shifted(delta * fraction) : frame;
+}
+
+export function moveLinkedCorner(frame, corner, dx, dy) {
+  // Clockwise TL, TR, BR, BL. X links left/right pairs; Y links top/bottom pairs.
+  return shiftPair(shiftPair(frame, corner, 0, dx), corner, 1, dy);
+}
+
+export function straightenFrame(frame) {
+  const xs = frame.map(([x]) => x),
+    ys = frame.map(([, y]) => y);
+  const l = Math.min(...xs),
+    r = Math.max(...xs),
+    t = Math.min(...ys),
+    b = Math.max(...ys);
+  return [
+    [l, t],
+    [r, t],
+    [r, b],
+    [l, b],
+  ];
+}
 
 export function landscapeFrame(frame, width, height) {
   const length = (a, b) => Math.hypot((a[0] - b[0]) * width, (a[1] - b[1]) * height);

@@ -7,42 +7,62 @@ import {
   ScanLine,
   RotateCcw,
   Maximize,
-  Move,
+  Link2,
 } from 'lucide-react';
 import { Dialog, Notice } from './Dialog.jsx';
-import { projector, landscapeFrame, goodFrame } from '../core/recognition.js';
+import {
+  projector,
+  landscapeFrame,
+  goodFrame,
+  moveLinkedCorner,
+  straightenFrame,
+} from '../core/recognition.js';
 
 export function AlignDialog({ photo, corners, onClose, onRead }) {
-  const [frame, setFrame] = useState(corners),
-    [active, setActive] = useState(null);
-  const svg = useRef(null),
+  const [frame, setFrame] = useState(corners);
+  const drag = useRef(null),
+    svg = useRef(null),
     w = 1000,
     h = (w * photo.height) / photo.width;
   const names = ['Top left', 'Top right', 'Bottom right', 'Bottom left'];
   const valid = goodFrame(frame);
   const project = valid ? projector(landscapeFrame(frame, photo.width, photo.height)) : null;
   const point = ([x, y]) => `${x * w},${y * h}`;
-  function setPoint(i, x, y) {
-    setFrame((prev) =>
-      prev.map((p, j) =>
-        j === i ? [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))] : p,
-      ),
-    );
-  }
-  function handleMove(e) {
-    if (active === null) return;
+  // Use displacement from the grab point, not the finger's absolute position:
+  // grabbing the outside of a handle should not snap the grid underneath it.
+  function imagePoint(e) {
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
       svg.current.getScreenCTM().inverse(),
     );
-    setPoint(active, p.x / w, p.y / h);
+    return [p.x / w, p.y / h];
   }
+  function startDrag(e, corner) {
+    if (drag.current || e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { id: e.pointerId, start: imagePoint(e), frame, corner };
+  }
+  function handleMove(e) {
+    const d = drag.current;
+    if (!d || e.pointerId !== d.id) return;
+    const [x, y] = imagePoint(e);
+    setFrame(moveLinkedCorner(d.frame, d.corner, x - d.start[0], y - d.start[1]));
+  }
+  function endDrag(e) {
+    if (e.pointerId === drag.current?.id) drag.current = null;
+  }
+  const tilted =
+    frame[0][0] !== frame[3][0] ||
+    frame[1][0] !== frame[2][0] ||
+    frame[0][1] !== frame[1][1] ||
+    frame[3][1] !== frame[2][1];
   const path = `M0 0H${w}V${h}H0Z M${frame.map(point).join('L')}Z`;
   return (
     <Dialog
       wide
       title="Adjust board frame"
       eyebrow="PHOTO ALIGNMENT"
-      description="Drag the four handles to the inside corners of your puzzle. Leave the wooden rim outside the frame."
+      description="Drag a corner sideways to move the whole left or right edge, or up and down to move the top or bottom edge. The opposite corner stays put."
       onClose={onClose}
     >
       <div className="align-surface">
@@ -51,8 +71,9 @@ export function AlignDialog({ photo, corners, onClose, onRead }) {
           viewBox={`0 0 ${w} ${h}`}
           className="align-image"
           onPointerMove={handleMove}
-          onPointerUp={() => setActive(null)}
-          onPointerCancel={() => setActive(null)}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
           aria-label="Adjustable photo frame"
         >
           <image href={photo.url} width={w} height={h} />
@@ -93,16 +114,18 @@ export function AlignDialog({ photo, corners, onClose, onRead }) {
                 if (dx || dy) {
                   e.preventDefault();
                   const step = e.shiftKey ? 0.01 : 0.002;
-                  setPoint(i, x + dx * step, y + dy * step);
+                  setFrame((prev) => moveLinkedCorner(prev, i, dx * step, dy * step));
                 }
               }}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.currentTarget.setPointerCapture(e.pointerId);
-                setActive(i);
-              }}
+              onPointerDown={(e) => startDrag(e, i)}
             >
-              <circle r="31" fill="transparent" />
+              <circle
+                r="12"
+                fill="transparent"
+                stroke="transparent"
+                strokeWidth="36"
+                vectorEffect="non-scaling-stroke"
+              />
               <circle r="12" fill="#6951c9" stroke="white" strokeWidth="4" />
               <circle r="3.5" fill="white" />
             </g>
@@ -110,10 +133,15 @@ export function AlignDialog({ photo, corners, onClose, onRead }) {
         </svg>
       </div>
       <div className="align-hint">
-        <Move size={14} />
-        Each square should sit inside one board cell.
+        <Link2 size={16} aria-hidden="true" />
+        <span>Edges are linked. Keep the puzzle rim outside the grid.</span>
+        {tilted && (
+          <button className="text-btn" onClick={() => setFrame(straightenFrame)}>
+            Straighten edges
+          </button>
+        )}
       </div>
-      {!valid && <Notice error>The handles must form a rectangle without crossing.</Notice>}
+      {!valid && <Notice error>Enlarge the frame to read the grid.</Notice>}
       <div className="dialog-actions">
         <button className="text-btn" disabled={frame === corners} onClick={() => setFrame(corners)}>
           <RotateCcw size={14} />

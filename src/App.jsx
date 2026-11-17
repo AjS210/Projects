@@ -358,8 +358,9 @@ export default function App() {
               <div>
                 <h3>Check the grid</h3>
                 <p>
-                  Compare the letters with your board. Use Adjust frame to line up the corners, or
-                  Edit grid to correct cells. All 12 five-cell shapes must be valid.
+                  Compare the letters with your board. In Adjust frame, drag a corner to move its
+                  linked edges. Use Edit grid to correct cells. All 12 five-cell shapes must be
+                  valid.
                 </p>
               </div>
             </li>

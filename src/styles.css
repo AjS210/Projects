@@ -1170,6 +1170,14 @@ textarea::placeholder,
   color: #746c7c;
   padding: 11px 0 0;
 }
+.align-hint > svg {
+  flex: none;
+  color: var(--purple);
+}
+.align-hint .text-btn {
+  margin-left: auto;
+  flex: none;
+}
 .camera-surface {
   background: #f2f0f7;
   border: 1px solid #ded9e7;
