@@ -4,14 +4,20 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Photograph a compl
 
 ## Try it
 
-The workspace opens with a labeled sample photo and its matching grid. The sample is **not** added to your collection automatically.
+[Open PentoLog](https://ajs210.github.io/Emul8or/). The workspace opens with a labeled sample photo and its matching grid. The sample is **not** added to your collection automatically.
 
-1. **Bring in earlier solves.** In **Collection → Import grids**, paste a 6 × 10 letter range from Google Sheets. Paste multiple boards one below another, or choose a CSV/TSV file. A 10 × 6 portrait range also works. Invalid grids are explained before any import is saved; duplicates are skipped.
+1. **Bring in earlier solves.** Open **Collection → Import grids → File or photo**. Choose an `.xlsx` or `.ods` workbook, a JPG/PNG screenshot, a CSV/TSV file, or a PentoLog JSON backup. Review the number of verified boards, then select **Import solutions**. **Paste or link** also accepts copied ranges or a Sheets link. Side-by-side, stacked and portrait boards are supported; duplicate or mirrored entries are not added again.
 2. **Capture a board.** Choose **Upload a photo**, drop an image onto the photo panel, or use **Use camera**. Include the whole puzzle in even light. On mobile, the camera action requests the device camera; on desktop it asks for a live camera preview. Camera access requires HTTPS or localhost and browser permission. File upload works without camera access.
 3. **Review the reading.** The scanner fills a colored letter grid. If the board is misaligned, use **Adjust frame** to drag the four handles to the inside corners of the pieces, then **Read grid**. In **Edit grid**, pick a letter and paint cells, or focus a cell and type. Arrow keys move between cells. Editing includes erase, undo, and paste from Sheets.
 4. **Save an original.** All 60 cells must form exactly one each of F, I, L, N, P, T, U, V, W, X, Y, and Z. The duplicate check distinguishes exact matches, horizontal and vertical reflections, and half-turns. A matching entry can be opened instead of saved again.
 
 **Storage:** Only named grids and dates are saved, in this browser's local storage. Photos are processed locally and are not uploaded or saved to the collection. Clearing site data, changing browsers, or leaving a private session can lose the collection. Use **Collection → Export** for a JSON backup, then **Import grids** to restore it or transfer it to another device. Each saved entry also has **Copy grid for Sheets**. There is no Google account connection or automatic sheet synchronization.
+
+### Google Sheets and screenshots
+
+- **Export the workbook:** on Android use Sheets → **⋮ → Share & export → Save as** (or **Send a copy**) → **Excel (.xlsx)**. On desktop use **File → Download → Microsoft Excel (.xlsx)**. A native `.gsheet` file is a shortcut and contains no cells. Choosing it or pasting a sheet URL gives you a Google export link; select the downloaded workbook afterward. No public sharing or account connection is needed in PentoLog.
+- **Workbook contents:** the reader searches worksheets for complete 6 × 10 or 10 × 6 ranges, ignoring headers, gutters and incomplete boards. It reads underlying cell labels, including labels hidden by formatting, or solid cell fills. It maps groups to the twelve pentomino shapes rather than requiring a particular palette. It does not evaluate formulas or extract embedded pictures.
+- **Screenshots:** use **Workspace → Upload a photo** to choose one detected board, or **Collection → Import grids** to import all verified boards in a JPG/PNG. The digital reader checks repeating grid lines and cell interiors, including white and black pieces. Cut-off boards are not filled in. For a difficult image, crop to one complete board or use **Adjust frame**.
 
 ## Run locally
 

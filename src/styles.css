@@ -2004,3 +2004,174 @@ textarea::placeholder,
     scroll-behavior: auto !important;
   }
 }
+
+/* File-first import: verify the whole sheet before writing any local records. */
+.import-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #f3f1f7;
+  margin-bottom: 14px;
+}
+.import-switch button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #686272;
+}
+.import-switch button[aria-pressed='true'] {
+  color: var(--purple-dark);
+  background: white;
+  border-color: #e2dceb;
+  box-shadow: 0 1px 3px #3421420c;
+}
+.import-drop {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 13px;
+  border: 1px dashed #b6a6d3;
+  border-radius: 8px;
+  text-align: left;
+  background: #faf8fd;
+}
+.import-drop:hover,
+.import-drop.drag-over {
+  background: var(--lavender);
+  border-color: var(--purple);
+}
+.import-drop > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+.import-drop strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+.import-drop small,
+.import-review p,
+.found-hint {
+  color: #6f6879;
+  font-size: 11.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.sheet-help {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #6a6374;
+  margin: 12px 0 15px;
+}
+.sheet-help summary {
+  cursor: pointer;
+  color: var(--purple-dark);
+  font-weight: 570;
+}
+.sheet-help p,
+.shortcut-help p {
+  margin-top: 6px;
+}
+.shortcut-help,
+.import-review {
+  border: 1px solid #ded8e9;
+  background: #faf9fc;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.shortcut-help .btn {
+  margin-top: 9px;
+}
+.import-count {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #366d53;
+}
+.import-samples {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 9px 0;
+}
+.import-samples > div {
+  background: white;
+  border: 1px solid #e6e1eb;
+  border-radius: 5px;
+  padding: 6px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.import-samples .puzzle-board {
+  width: 43px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.import-samples small {
+  font-size: 10px;
+  color: #62596d;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.board-switch {
+  margin: 0 0 9px;
+}
+.board-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.found-boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.found-board {
+  border: 1px solid #ded9e6;
+  background: #fcfbfe;
+  border-radius: 7px;
+  text-align: left;
+  padding: 7px;
+  overflow: hidden;
+}
+.found-board > svg {
+  display: block;
+  width: 100%;
+  height: 90px;
+  background: #efedf2;
+  border-radius: 3px;
+}
+.found-board > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 2px 0;
+}
+.found-board:hover,
+.found-board.current {
+  border-color: #ac98d2;
+  background: #f5f1fc;
+}
+.found-hint {
+  margin-top: 9px;
+}

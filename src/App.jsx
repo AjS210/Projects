@@ -17,7 +17,7 @@ import { Scanner } from './components/Scanner.jsx';
 import { Dialog, Notice } from './components/Dialog.jsx';
 import { AlignDialog, CameraDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
-import { Collection, SaveDialog, ImportDialog, EntryDialog } from './components/Collection.jsx';
+import { Collection, SaveDialog, EntryDialog } from './components/Collection.jsx';
 import {
   BLANK,
   SAMPLE,
@@ -27,8 +27,10 @@ import {
   validateBoard,
 } from './core/puzzle.js';
 import { readCollection, writeCollection, mergeRecords, STORE } from './core/collection.js';
+import { ImportDialog } from './components/ImportDialog.jsx';
+import { PhotoBoardsDialog } from './components/PhotoBoardsDialog.jsx';
 import { FULL_FRAME } from './core/recognition.js';
-import { openPhoto, scanPhoto } from './core/photo.js';
+import { openPhoto, scanPhoto, PHOTO_TYPES } from './core/photo.js';
 
 function readLocal() {
   try {
@@ -52,6 +54,8 @@ export default function App() {
     [error, setError] = useState(''),
     [modal, setModal] = useState(null),
     [opened, setOpened] = useState(null);
+  const [photoBoards, setPhotoBoards] = useState([]),
+    [boardIndex, setBoardIndex] = useState(0);
   const [toast, setToast] = useState(null);
   const controller = useRef(null),
     nativeCamera = useRef(null),
@@ -109,6 +113,8 @@ export default function App() {
       if (file) {
         currentPhoto = await openPhoto(file);
         ctl.signal.throwIfAborted();
+        setPhotoBoards([]);
+        setBoardIndex(0);
         setPhoto(currentPhoto);
         setCells(BLANK);
         setCorners(FULL_FRAME);
@@ -117,6 +123,13 @@ export default function App() {
       ctl.signal.throwIfAborted();
       setCells(result.cells);
       setCorners(result.corners);
+      const boards = result.boards || [];
+      setPhotoBoards(boards);
+      setBoardIndex(0);
+      if (boards.length > 1) {
+        setModal('boards');
+        return;
+      }
       notify(
         result.found === 12
           ? 'All 12 piece shapes recognized.'
@@ -173,6 +186,8 @@ export default function App() {
   function resetSample() {
     controller.current?.abort();
     setBusy(false);
+    setPhotoBoards([]);
+    setBoardIndex(0);
     setPhoto(SAMPLE_PHOTO);
     setCorners(SAMPLE_FRAME);
     setCells(SAMPLE);
@@ -253,6 +268,9 @@ export default function App() {
         {tab === 'workspace' ? (
           <Scanner
             photo={photo}
+            photoBoards={photoBoards}
+            boardIndex={boardIndex}
+            onChooseBoard={() => setModal('boards')}
             cells={cells}
             check={check}
             match={match}
@@ -302,7 +320,7 @@ export default function App() {
       />
       <input
         type="file"
-        accept="image/*"
+        accept={PHOTO_TYPES}
         ref={cameraFile}
         className="visually-hidden"
         tabIndex="-1"
@@ -327,8 +345,9 @@ export default function App() {
               <div>
                 <h3>Capture your board</h3>
                 <p>
-                  Photograph a complete 6 × 10 rectangle in even light. Keep all four corners
-                  visible. Distinct piece colors or clear seams work best.
+                  Photograph a complete 6 × 10 rectangle in even light. You can also upload a JPG of
+                  a sheet and choose among its complete boards. Keep all four corners visible.
+                  Distinct piece colors or clear seams work best.
                 </p>
               </div>
             </li>
@@ -361,7 +380,8 @@ export default function App() {
             <HardDrive size={18} />
             <p>
               <strong>Your collection is local.</strong> Use Export in Collection to back it up.
-              Import grids accepts old Sheets ranges or a PentoLog backup.
+              Import grids accepts Sheets exports (.xlsx or .ods), screenshots, pasted ranges, and
+              PentoLog backups.
             </p>
           </div>
           <div className="dialog-actions">
@@ -375,6 +395,28 @@ export default function App() {
             </button>
           </div>
         </Dialog>
+      )}
+      {modal === 'boards' && photoBoards.length > 1 && (
+        <PhotoBoardsDialog
+          boards={photoBoards}
+          photo={photo}
+          active={boardIndex}
+          onClose={close}
+          onChoose={(i) => {
+            setBoardIndex(i);
+            setCells(photoBoards[i].cells);
+            setCorners(photoBoards[i].corners);
+            close();
+          }}
+          onImport={() =>
+            importRecords(
+              photoBoards.map((b, i) => ({
+                cells: b.cells,
+                name: `${photo.name.replace(/\.[^.]+$/, '').slice(0, 55)} · Board ${i + 1}`,
+              })),
+            )
+          }
+        />
       )}
       {modal === 'align' && (
         <AlignDialog
@@ -402,6 +444,7 @@ export default function App() {
           cells={cells}
           onClose={close}
           onApply={(draft) => {
+            if (draft !== cells) setPhotoBoards([]);
             setCells(draft);
             close();
             notify('Grid changes applied.');

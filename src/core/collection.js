@@ -44,6 +44,12 @@ export function mergeRecords(existing, incoming) {
   const records = [...existing];
   let added = 0;
   for (const entry of incoming) {
+    if (
+      typeof entry?.cells !== 'string' ||
+      entry.cells.length !== 60 ||
+      !validateBoard(entry.cells).valid
+    )
+      throw new Error('Only complete boards with all twelve verified shapes can be imported.');
     const key = canonicalKey(entry.cells);
     if (keys.has(key)) continue;
     keys.add(key);

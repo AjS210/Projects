@@ -19,12 +19,38 @@ function imageCanvas(img, limit) {
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   return { canvas, ctx };
 }
+// Android file providers can omit the MIME type or return application/octet-stream.
+// Prefer the actual signature, then the declared image type or filename; decode
+// the bytes before accepting anything as a photo.
+export function imageFileType(file, bytes = []) {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47)
+    return 'image/png';
+  if (
+    String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' &&
+    String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP'
+  )
+    return 'image/webp';
+  if (file.type?.startsWith('image/')) return file.type;
+  const ext = file.name?.split('.').pop()?.toLowerCase();
+  const types = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    jpe: 'image/jpeg',
+    jfif: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
+  return Object.hasOwn(types, ext) ? types[ext] : '';
+}
+export const PHOTO_TYPES = 'image/*,.jpg,.jpeg,.jpe,.jfif,.png,.webp';
 export async function openPhoto(file) {
-  if (!file || !file.type.startsWith('image/'))
-    throw new Error('Choose an image file, such as a JPG, PNG, or WebP.');
+  if (!file) throw new Error('Choose a JPG, PNG, or WebP image.');
   if (file.size > 25 * 1024 * 1024)
     throw new Error('This photo is too large. Choose one smaller than 25 MB.');
-  const url = URL.createObjectURL(file);
+  const type = imageFileType(file, new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+  if (!type) throw new Error('Choose an image file, such as a JPG, PNG, or WebP.');
+  const url = URL.createObjectURL(type === file.type ? file : file.slice(0, file.size, type));
   try {
     const img = await loadImage(url);
     if (Math.min(img.naturalWidth, img.naturalHeight) < 30)

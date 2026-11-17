@@ -21,10 +21,14 @@ import {
 import { Board } from './Board.jsx';
 import { PieceIcon } from './Artwork.jsx';
 import { LETTERS, variants } from '../core/puzzle.js';
+import { PHOTO_TYPES } from '../core/photo.js';
 import { Notice } from './Dialog.jsx';
 
 export function Scanner({
   photo,
+  photoBoards,
+  boardIndex,
+  onChooseBoard,
   cells,
   check,
   match,
@@ -118,9 +122,30 @@ export function Scanner({
                 }
                 className={`input-photo ${photo.sample ? '' : 'user-photo'}`}
               />
+              {photoBoards.length > 1 && (
+                <svg
+                  className="board-outline"
+                  viewBox={`0 0 ${photo.width} ${photo.height}`}
+                  aria-hidden="true"
+                >
+                  <polygon
+                    points={photoBoards[boardIndex].corners
+                      .map(([x, y]) => `${x * photo.width},${y * photo.height}`)
+                      .join(' ')}
+                    fill="none"
+                    stroke="#f1df87"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+              )}
               <div className="photo-caption">
                 <span className="photo-indicator" />
-                {photo.sample ? 'Sample photo' : 'Your photo'}
+                {photoBoards.length > 1
+                  ? `Board ${boardIndex + 1} of ${photoBoards.length}`
+                  : photo.sample
+                    ? 'Sample photo'
+                    : 'Your photo'}
               </div>
               <button
                 type="button"
@@ -146,7 +171,7 @@ export function Scanner({
               tabIndex="-1"
               aria-label="Upload solution photo"
               ref={file}
-              accept="image/*"
+              accept={PHOTO_TYPES}
               onChange={(e) => {
                 if (e.target.files[0]) onUpload(e.target.files[0]);
                 e.target.value = '';
@@ -157,13 +182,21 @@ export function Scanner({
                 <UploadCloud size={22} />
               </span>
               <span className="upload-copy">
-                <strong>{dragging ? 'Drop your photo here' : 'Upload a photo'}</strong>
+                <strong>
+                  {dragging ? 'Drop your photo here' : 'Upload a photo or screenshot'}
+                </strong>
                 <span>
                   Drag & drop or <em>browse files</em>
                 </span>
               </span>
               <span className="filetypes">JPG, PNG, WEBP</span>
             </button>
+            {photoBoards.length > 1 && (
+              <button className="board-switch btn btn-light" onClick={onChooseBoard}>
+                <Layers size={15} />
+                Choose from {photoBoards.length} boards
+              </button>
+            )}
             <div className="photo-actions">
               <button className="btn btn-light" onClick={onCamera}>
                 <Camera size={15} />
@@ -234,7 +267,7 @@ export function Scanner({
                 {
                   {
                     busy: 'Looking for the twelve piece shapes.',
-                    review: 'Adjust the frame or edit the missing pieces.',
+                    review: 'Crop to one full board, adjust the frame, or edit cells.',
                     unavailable: 'Your local collection could not be read.',
                     match: `${matchType}: “${match?.name}”`,
                     unique: 'No matching or mirrored solution found.',

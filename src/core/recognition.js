@@ -1,5 +1,7 @@
 import { BLANK, identify } from './puzzle.js';
 import { fitEdges } from './fitEdges.js';
+import { decodeColors } from './digitalGrid.js';
+import { findScreenBoards } from './screenBoards.js';
 
 // All frame points are normalized image coordinates, clockwise around the board.
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -199,7 +201,8 @@ export function readFrame(image, corners) {
   const project = projector(landscapeFrame(corners, image.width, image.height));
   const pixel = (x, y) => offset(image, ...project(x / 10, y / 6));
   const d = image.data,
-    colors = [];
+    colors = [],
+    rawColors = [];
   for (let i = 0; i < 60; i++) {
     const r = [],
       g = [],
@@ -213,8 +216,12 @@ export function readFrame(image, corners) {
         g.push(d[p + 1]);
         b.push(d[p + 2]);
       }
-    colors.push(lab(median(r), median(g), median(b)));
+    const rgb = [median(r), median(g), median(b)];
+    rawColors.push(rgb);
+    colors.push(lab(...rgb));
   }
+  const digital = decodeColors(rawColors);
+  if (digital) return { cells: digital, found: 12, confidence: 720, corners };
   const edges = [];
   for (let a = 0; a < 60; a++)
     for (const horizontal of [true, false]) {
@@ -285,6 +292,8 @@ export function scanImage(image, requestedFrame = null) {
       throw new Error('Keep the four corners around the board without crossing them.');
     return readFrame(image, requestedFrame);
   }
+  const boards = findScreenBoards(image);
+  if (boards.length) return { ...boards[0], boards };
   const frames = proposeFrames(image),
     seen = new Set();
   let best = null;

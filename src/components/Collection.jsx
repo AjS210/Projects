@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Archive,
   ArrowUpRight,
@@ -6,7 +6,6 @@ import {
   Check,
   ClipboardCopy,
   Download,
-  FileUp,
   Grid2X2,
   Import,
   Layers,
@@ -18,7 +17,7 @@ import {
 import { Board } from './Board.jsx';
 import { Dialog, Notice } from './Dialog.jsx';
 import { asTable } from '../core/puzzle.js';
-import { defaultName, formatDate, packRecords, parseImport } from '../core/collection.js';
+import { defaultName, formatDate, packRecords } from '../core/collection.js';
 
 export function Collection({ records, onImport, onOpen, onScan }) {
   const [search, setSearch] = useState(''),
@@ -195,93 +194,6 @@ export function SaveDialog({ cells, next, onClose, onSave }) {
           <button className="btn btn-primary" type="submit">
             <BookmarkPlus size={15} />
             Save to collection
-          </button>
-        </div>
-      </form>
-    </Dialog>
-  );
-}
-export function ImportDialog({ onClose, onImport }) {
-  const [text, setText] = useState(''),
-    [error, setError] = useState(''),
-    [filename, setFilename] = useState('');
-  const input = useRef(null);
-  async function read(file) {
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) {
-      setError('Choose a grid or backup file smaller than 4 MB.');
-      return;
-    }
-    try {
-      setText(await file.text());
-      setFilename(file.name);
-      setError('');
-    } catch {
-      setError('That file could not be opened. Try pasting the grid instead.');
-    }
-  }
-  const submit = (e) => {
-    e.preventDefault();
-    try {
-      onImport(parseImport(text));
-    } catch (err) {
-      setError(
-        err instanceof SyntaxError
-          ? 'The backup is not valid JSON. Try exporting it again.'
-          : err.message,
-      );
-    }
-  };
-  return (
-    <Dialog
-      title="Import solution grids"
-      eyebrow="BRING YOUR COLLECTION"
-      description="Copy a 6 × 10 range from Google Sheets and paste it below. For several boards, paste their grids one below another."
-      onClose={onClose}
-    >
-      <form onSubmit={submit}>
-        <label className="field-label" htmlFor="import-data">
-          Grid data
-        </label>
-        <textarea
-          id="import-data"
-          className="grid-paste"
-          autoFocus
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setFilename('');
-          }}
-          placeholder={'L L L L N N X U U I\nL F N N N X X X U I\n…'}
-        />
-        <div className="import-file-line">
-          <input
-            ref={input}
-            type="file"
-            accept=".csv,.tsv,.txt,.json"
-            className="visually-hidden"
-            aria-label="Choose grid or backup file"
-            tabIndex="-1"
-            onChange={(e) => read(e.target.files[0])}
-          />
-          <button type="button" className="text-btn" onClick={() => input.current?.click()}>
-            <FileUp size={15} />
-            Choose a file
-          </button>
-          <span>{filename || 'CSV, TSV, TXT or PentoLog backup'}</span>
-        </div>
-        <div className="import-note">
-          <ShieldCheck size={16} />
-          Only valid, new solutions are added. Mirrored duplicates are skipped.
-        </div>
-        {error && <Notice error>{error}</Notice>}
-        <div className="dialog-actions">
-          <button type="button" className="btn btn-light" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={!text.trim()}>
-            <Import size={15} />
-            Import solutions
           </button>
         </div>
       </form>
