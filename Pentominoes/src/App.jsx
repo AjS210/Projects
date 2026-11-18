@@ -13,7 +13,7 @@ import {
   HardDrive,
   BookOpen,
 } from 'lucide-react';
-import { BrandMark, HeroArt } from './components/Artwork.jsx';
+import { BrandMark } from './components/Artwork.jsx';
 import { CollectionUpload } from './components/CollectionUpload.jsx';
 import { UploadReviewDialog } from './components/UploadReviewDialog.jsx';
 import { Board } from './components/Board.jsx';
@@ -268,19 +268,6 @@ export default function App() {
         </div>
       </header>
       <main className={`shell main-content ${tab}`} id="main" tabIndex="-1">
-        {tab === 'collection' && (
-          <div className="hero">
-            <div className="hero-copy">
-              <div className="eyebrow">
-                <span className="eyebrow-line" />
-                PERSONAL ARCHIVE
-              </div>
-              <h1>Solution collection</h1>
-              <p>Your finds by catalogue number. Explore them by the position of the X piece.</p>
-            </div>
-            <HeroArt />
-          </div>
-        )}
         {local.error && <Notice error>{local.error}</Notice>}
         {tab === 'workspace' ? (
           <div className="work-panels">

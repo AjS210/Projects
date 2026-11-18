@@ -55,3 +55,24 @@ test('frame collections save solves, isolate matching numbers, filter groups and
   await page.reload();
   assert.equal((await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), STORE)).solutions.length, 2);
 });
+
+test('collection frame selector has breathing room and no introductory hero or extra label', async (t) => {
+  const page = await openPhone(t, '#collection');
+  const collection = page.getByRole('region', { name: 'Saved solutions' });
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    assert.equal(await page.locator('.hero').count(), 0);
+    assert.equal(await page.getByText('PERSONAL ARCHIVE').count(), 0);
+    assert.equal(await collection.getByText('COLLECTION FRAME').count(), 0);
+    const name = collection.getByText('6×10 Frame', { exact: true });
+    const button = collection.getByRole('button', { name: 'Change Frame' });
+    const headerBox = await collection.locator('.collection-heading').boundingBox();
+    const buttonBox = await button.boundingBox();
+    const nameBox = await name.boundingBox();
+    assert.ok(buttonBox.y > headerBox.y + headerBox.height, 'button clears header line');
+    assert.ok(Math.abs(buttonBox.height - 34.2) < 0.1, 'button is 5% shorter than 36px');
+    assert.ok(Math.abs((buttonBox.y + buttonBox.height / 2) - (nameBox.y + nameBox.height / 2)) < 1, 'name remains alongside button');
+    await button.click();
+    await page.getByRole('dialog', { name: 'Choose a collection frame' }).getByRole('button', { name: 'Cancel' }).click();
+  }
+});

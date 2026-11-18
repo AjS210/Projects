@@ -65,7 +65,7 @@ test('page, favicon, touch, launcher and share art all reproduce the traced P in
   const mark = await page.locator('.brand .brand-mark').getAttribute('src');
   assert.equal(url(await page.locator('.footer-brand .brand-mark').getAttribute('src')), url(mark));
   await page.getByRole('link', { name: 'Collection', exact: true }).click();
-  assert.equal(url(await page.locator('.mark-study image').getAttribute('href')), url(mark));
+  assert.equal(await page.locator('.hero').count(), 0, 'collection has no introductory hero');
   assert.equal(
     await page.locator('.footer-brand .brand-mark').evaluate((e) => getComputedStyle(e).filter),
     'none',

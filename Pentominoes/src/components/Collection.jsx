@@ -83,7 +83,7 @@ export function Collection({ records, onImport, onOpen, onScan }) {
         </div>
       </div>
       <div className="collection-frame-row">
-        <div><span className="small-label">COLLECTION FRAME</span><strong>{getBoard(boardId).name}</strong></div>
+        <strong>{getBoard(boardId).name}</strong>
         <button className="btn btn-light" type="button" onClick={() => setChoosingFrame(true)}>Change Frame</button>
       </div>
       <XGroupFilter key={boardId} boardId={boardId} group={group} counts={counts} total={frameRecords.length} onChange={changeGroup} />
