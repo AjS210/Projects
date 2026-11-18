@@ -45,6 +45,7 @@ for (const letter of LETTERS) {
     }
   }
 }
+export const identifyPoints = (points) => points.length === 5 ? (shapeNames.get(signature(points)) ?? null) : null;
 export function identify(indices) {
   if (indices.length !== 5) return null;
   return shapeNames.get(signature(indices.map((i) => [i % COLS, Math.floor(i / COLS)]))) ?? null;
@@ -68,9 +69,9 @@ export function variants(cells) {
 }
 // Portrait boards are rotated to landscape at input. Only four symmetries preserve a 6×10 rectangle.
 export const canonicalKey = (cells) => variants(cells).sort()[0];
-export function asTable(cells) {
-  return Array.from({ length: ROWS }, (_, y) =>
-    [...cells.slice(y * COLS, (y + 1) * COLS)].join('\t'),
+export function asTable(cells, width = COLS, height = ROWS) {
+  return Array.from({ length: height }, (_, y) =>
+    [...cells.slice(y * width, (y + 1) * width)].join('\t'),
   ).join('\n');
 }
 

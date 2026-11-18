@@ -8,11 +8,14 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { lookupSolution } from '../catalogue.js';
+import { frameVariants } from '../core/catalogue.js';
 import { variants } from '../core/puzzle.js';
+import { getBoard, DEFAULT_BOARD } from '../core/boards.js';
 
 // Scanned grids and finished games take exactly the same catalogue/save path.
 export function SolutionResult({
   cells,
+  boardId = DEFAULT_BOARD,
   busy = false,
   hasPhoto = false,
   saveLabel = 'Save solution',
@@ -20,14 +23,14 @@ export function SolutionResult({
   onSave,
   onView,
 }) {
-  const reference = lookupSolution(cells);
+  const reference = lookupSolution(cells, boardId);
   const match =
-    reference && collection.records.find((r) => r.reference.number === reference.number);
+    reference && collection.records.find((r) => (r.boardId ?? DEFAULT_BOARD) === boardId && r.reference.number === reference.number);
   const matchType =
     match &&
-    ['Exact match', 'Left–right mirror', 'Top–bottom mirror', '180° rotation'][
-      variants(match.cells).indexOf(cells)
-    ];
+    (boardId === DEFAULT_BOARD
+      ? ['Exact match', 'Left–right mirror', 'Top–bottom mirror', '180° rotation'][variants(match.cells).indexOf(cells)]
+      : match.cells === cells.replaceAll('#', '.') ? 'Exact match' : frameVariants(match.cells, getBoard(boardId)).includes(cells.replaceAll('#', '.')) ? 'Equivalent orientation' : 'Exact match');
   const [state, Icon, title, detail] = busy
     ? ['busy', LoaderCircle, 'Reading your photo', 'Looking for the twelve piece shapes.']
     : !reference
@@ -71,7 +74,7 @@ export function SolutionResult({
         <button
           className="btn btn-primary result-cta"
           disabled={state !== 'unique'}
-          onClick={() => onSave(cells, reference)}
+          onClick={() => onSave(cells.replaceAll('#', '.'), { ...reference, boardId })}
         >
           <BookmarkPlus size={15} /> {saveLabel}
         </button>

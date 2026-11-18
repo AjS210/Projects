@@ -189,7 +189,7 @@ export default function App() {
     setModal('save');
   }
   function saveCells(cells, reference) {
-    const { records, added } = mergeRecords(latest(), [{ cells }]);
+    const { records, added } = mergeRecords(latest(), [{ cells, boardId: reference.boardId }]);
     store(records);
     close();
     notify(

@@ -95,7 +95,7 @@ export function ImportDialog({ onClose, onImport }) {
     <Dialog
       title="Import solution grids"
       eyebrow="BRING YOUR COLLECTION"
-      description="Bring over whole sheets or board screenshots. Only complete, verified 6 × 10 boards are imported."
+      description="Import a PentoLog backup for any frame. Sheets and board screenshots currently support verified 6 × 10 boards."
       onClose={onClose}
     >
       <div className="import-switch" aria-label="Import method">
@@ -165,8 +165,8 @@ export function ImportDialog({ onClose, onImport }) {
                 <div className="import-samples">
                   {records.slice(0, 4).map((r, i) => (
                     <div key={i}>
-                      <Board cells={r.cells} labels={false} letters={false} />
-                      <small title={r.name}>{lookupSolution(r.cells)?.name}</small>
+                      <Board cells={r.cells} boardId={r.boardId} labels={false} letters={false} />
+                      <small title={r.name}>{lookupSolution(r.cells, r.boardId)?.name}</small>
                     </div>
                   ))}
                 </div>

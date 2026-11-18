@@ -1,9 +1,11 @@
 import React, { useId, useRef, useState } from 'react';
 import { PIECES, LETTERS } from '../core/puzzle.js';
+import { getBoard } from '../core/boards.js';
 
 // A single SVG keeps the cell edges and coordinates aligned at every screen size.
 export function Board({
   cells,
+  boardId,
   highlight = null,
   labels = true,
   letters = true,
@@ -14,16 +16,18 @@ export function Board({
   const desc = useId(),
     svg = useRef(null);
   const [focused, setFocused] = useState(0);
+  const { width, height, blocked } = getBoard(boardId);
+  const holes = new Set(blocked.map(([x, y]) => y * width + x));
   const u = 40,
     x0 = labels ? 23 : 1,
     y0 = labels ? 21 : 1;
-  const view = labels ? '0 0 430 270' : '0 0 402 242';
+  const view = `0 0 ${width * u + (labels ? 30 : 2)} ${height * u + (labels ? 30 : 2)}`;
   const handleKey = (e, i) => {
     if (!onPaint) return;
-    const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 10, ArrowUp: -10 }[e.key];
+    const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: width, ArrowUp: -width }[e.key];
     if (delta !== undefined) {
       e.preventDefault();
-      svg.current?.querySelector(`[data-cell="${Math.max(0, Math.min(59, i + delta))}"]`)?.focus();
+      svg.current?.querySelector(`[data-cell="${Math.max(0, Math.min(width * height - 1, i + delta))}"]`)?.focus();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onPaint(i);
@@ -48,25 +52,25 @@ export function Board({
       <title id={desc}>
         {onPaint
           ? 'Editable solution grid. Choose a piece and click a cell, or focus a cell and type its letter.'
-          : 'Six-row, ten-column pentomino solution grid'}
+          : `${height}-row, ${width}-column pentomino solution grid`}
       </title>
       {!onPaint && (
         <desc id={`${desc}-rows`}>
           {Array.from(
-            { length: 6 },
+            { length: height },
             (_, y) =>
-              `Row ${String.fromCharCode(65 + y)}: ${[...cells.slice(y * 10, y * 10 + 10)].map((l) => (l === '.' ? 'empty' : l)).join(' ')}.`,
+              `Row ${String.fromCharCode(65 + y)}: ${[...cells.slice(y * width, y * width + width)].map((l, x) => holes.has(y * width + x) ? 'blocked' : (l === '.' ? 'empty' : l)).join(' ')}.`,
           ).join(' ')}
         </desc>
       )}
       {labels && (
         <g className="axis-labels" textAnchor="middle" dominantBaseline="central">
-          {Array.from({ length: 10 }, (_, x) => (
+          {Array.from({ length: width }, (_, x) => (
             <text key={x} x={x0 + (x + 0.5) * u} y="8">
               {x + 1}
             </text>
           ))}
-          {Array.from({ length: 6 }, (_, y) => (
+          {Array.from({ length: height }, (_, y) => (
             <text key={y} x="8" y={y0 + (y + 0.5) * u}>
               {String.fromCharCode(65 + y)}
             </text>
@@ -74,8 +78,8 @@ export function Board({
         </g>
       )}
       {Array.from(cells, (l, i) => {
-        const x = x0 + (i % 10) * u,
-          y = y0 + Math.floor(i / 10) * u,
+        const x = x0 + (i % width) * u,
+          y = y0 + Math.floor(i / width) * u,
           piece = PIECES[l];
         return (
           <g
@@ -88,7 +92,7 @@ export function Board({
             onFocus={onPaint ? () => setFocused(i) : undefined}
             aria-label={
               onPaint
-                ? `${String.fromCharCode(65 + Math.floor(i / 10))}${(i % 10) + 1}: ${piece ? l : 'empty'}`
+                ? `${String.fromCharCode(65 + Math.floor(i / width))}${(i % width) + 1}: ${piece ? l : 'empty'}`
                 : undefined
             }
             onClick={onPaint ? () => onPaint(i) : undefined}
@@ -100,7 +104,7 @@ export function Board({
               y={y}
               width={u}
               height={u}
-              fill={piece?.color || 'var(--well)'}
+              fill={piece?.color || (holes.has(i) ? '#747b7d' : 'var(--well)')}
               stroke={piece?.ink || 'var(--line-strong)'}
               strokeWidth=".7"
               strokeOpacity=".42"
@@ -114,7 +118,7 @@ export function Board({
                 dominantBaseline="central"
                 fill={piece?.ink || 'var(--quiet)'}
               >
-                {piece ? l : '·'}
+                {piece ? l : holes.has(i) ? '' : '·'}
               </text>
             )}
           </g>
@@ -129,16 +133,16 @@ export function Board({
         pointerEvents="none"
       >
         {[...cells].map((l, i) => {
-          const col = i % 10,
-            row = Math.floor(i / 10),
+          const col = i % width,
+            row = Math.floor(i / width),
             x = x0 + col * u,
             y = y0 + row * u;
           let path = '';
           if (col && cells[i - 1] !== l) path += `M${x} ${y}v40`;
-          if (row && cells[i - 10] !== l) path += `M${x} ${y}h40`;
+          if (row && cells[i - width] !== l) path += `M${x} ${y}h40`;
           return path ? <path key={i} d={path} /> : null;
         })}
-        <rect x={x0} y={y0} width="400" height="240" rx="1.5" />
+        <rect x={x0} y={y0} width={width * u} height={height * u} rx="1.5" />
       </g>
     </svg>
   );
