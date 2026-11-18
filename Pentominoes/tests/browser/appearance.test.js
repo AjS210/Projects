@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PIECES } from '../../src/core/puzzle.js';
-import { openPhone } from './site.js';
+import { openPhone, uploadBoardPhoto } from './site.js';
 
 // Independent transcription of the supplied outline, read top to bottom.
 const trace = [
@@ -112,13 +112,19 @@ test('light OS preference still opens dark workspace, empty editor, collection a
     );
   };
   assert.equal(await page.locator('html').evaluate((e) => getComputedStyle(e).colorScheme), 'dark');
-  for (const sel of ['html', 'body', '.site-header', '.panel', '.board-stage', '.piece-tile'])
+  for (const sel of ['html', 'body', '.site-header', '.panel', '.upload-zone', '.tray-piece'])
     await dark(sel);
-  await button('Edit grid').click();
+  await uploadBoardPhoto(page);
+  await dark('.board-stage');
+  await button('Edit cells').click();
   await dark('dialog[open]');
   await button('Clear grid').click();
   await dark('.editor-stage .cell-square', 'fill');
   await button('Cancel').click();
+  await page
+    .getByRole('dialog', { name: 'Review upload' })
+    .getByRole('button', { name: 'Cancel' })
+    .click();
   await page.getByRole('link', { name: /^Collection/ }).click();
   await dark('.collection-panel');
   await button('Import grids').click();

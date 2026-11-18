@@ -173,7 +173,8 @@ export function ImportDialog({ onClose, onImport }) {
                 <p>
                   {records.length > 4 ? `Showing the first 4 of ${records.length}. ` : ''}Nothing is
                   saved until you import.
-                  {stage.kind === 'image' && ' You can then adjust this photo in Workspace.'}
+                  {stage.kind === 'image' &&
+                    ' To revisit the photo, use Collection Upload → Review last upload in Workspace.'}
                 </p>
               </div>
             )}

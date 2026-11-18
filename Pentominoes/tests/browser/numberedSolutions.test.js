@@ -2,21 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STORE, packRecords } from '../../src/core/collection.js';
 import { SAMPLE, variants } from '../../src/core/puzzle.js';
-import { openPhone } from './site.js';
+import { openPhone, uploadBoardPhoto } from './site.js';
 
 test('numbered saves, legacy backup imports, X groups and number search on a phone', async (t) => {
   const page = await openPhone(t);
   const button = (name) => page.getByRole('button', { name, exact: true });
   const saved = () =>
     page.evaluate((key) => JSON.parse(localStorage.getItem(key))?.solutions, STORE);
-  await page.locator('.result-unique').getByText('Solution #2182', { exact: true }).waitFor();
-  assert.equal(await saved(), undefined, 'the catalogue is not the personal collection');
-  await button('Save solution').tap();
-  const save = page.getByRole('dialog', { name: 'Save Solution #2182' });
-  await save.getByText('X group B3', { exact: true }).waitFor();
-  assert.equal(await save.getByRole('textbox').count(), 0);
-  await save.getByRole('button', { name: 'Save to collection' }).tap();
-  await button('View entry').waitFor();
+  const review = await uploadBoardPhoto(page);
+  await review.getByText('Solution #2182', { exact: true }).waitFor();
+  await review.getByText('New to you · X group B3', { exact: true }).waitFor();
+  assert.equal(await saved(), undefined, 'recognition is not a collection save');
+  await review.getByRole('button', { name: 'Save to collection' }).tap();
+  await review.waitFor({ state: 'detached' });
   assert.deepEqual(
     (await saved()).map((r) => [r.name, r.cells]),
     [['Solution #2182', SAMPLE]],

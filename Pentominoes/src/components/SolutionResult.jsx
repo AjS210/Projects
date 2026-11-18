@@ -15,6 +15,7 @@ export function SolutionResult({
   cells,
   busy = false,
   hasPhoto = false,
+  saveLabel = 'Save solution',
   collection,
   onSave,
   onView,
@@ -35,8 +36,8 @@ export function SolutionResult({
           TriangleAlert,
           'Review needed',
           hasPhoto
-            ? 'Crop to one full board, adjust the frame, or edit cells.'
-            : 'Check the letters in Edit grid or scan a complete board.',
+            ? 'Adjust the grid to one complete board, or edit the cells.'
+            : 'Cover every square without overlapping pieces.',
         ]
       : collection.error
         ? [
@@ -72,7 +73,7 @@ export function SolutionResult({
           disabled={state !== 'unique'}
           onClick={() => onSave(cells, reference)}
         >
-          <BookmarkPlus size={15} /> Save solution
+          <BookmarkPlus size={15} /> {saveLabel}
         </button>
       )}
     </div>

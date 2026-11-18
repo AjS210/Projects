@@ -1,15 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Camera,
-  CameraOff,
-  ImagePlus,
-  LoaderCircle,
-  ScanLine,
-  RotateCcw,
-  Maximize,
-  Link2,
-  Move,
-} from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { ScanLine, RotateCcw, Maximize, Link2, Move } from 'lucide-react';
 import { Dialog, Notice } from './Dialog.jsx';
 import {
   projector,
@@ -238,93 +228,7 @@ export function PhotoDialog({ photo, onClose, onAlign }) {
         </span>
         <button className="btn btn-light" onClick={onAlign}>
           <Maximize size={15} />
-          Adjust frame
-        </button>
-      </div>
-    </Dialog>
-  );
-}
-export function CameraDialog({ onClose, onFile, onBrowse }) {
-  const video = useRef(null),
-    [ready, setReady] = useState(false),
-    [error, setError] = useState('');
-  useEffect(() => {
-    let cancelled = false,
-      stream;
-    (async () => {
-      try {
-        if (!navigator.mediaDevices?.getUserMedia)
-          throw new Error('Camera access is unavailable in this browser.');
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-          audio: false,
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        video.current.srcObject = stream;
-        await video.current.play();
-        if (!cancelled) setReady(true);
-      } catch (err) {
-        if (!cancelled)
-          setError(
-            err.name === 'NotAllowedError'
-              ? 'Camera access was not granted. Allow camera access in your browser, or choose a photo instead.'
-              : 'No camera is available here. You can still upload a photo of your puzzle.',
-          );
-      }
-    })();
-    return () => {
-      cancelled = true;
-      stream?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-  const capture = () => {
-    const cam = video.current;
-    if (!cam?.videoWidth) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = cam.videoWidth;
-    canvas.height = cam.videoHeight;
-    canvas.getContext('2d').drawImage(cam, 0, 0);
-    canvas.toBlob(
-      (blob) => {
-        if (blob) onFile(new File([blob], 'Camera capture.jpg', { type: 'image/jpeg' }));
-        else setError('The capture was not readable. Try uploading a photo.');
-      },
-      'image/jpeg',
-      0.94,
-    );
-  };
-  return (
-    <Dialog
-      title="Capture a solution"
-      eyebrow="CAMERA"
-      description="Keep the whole board in view and hold your camera as square to the puzzle as possible."
-      wide
-      onClose={onClose}
-    >
-      <div className="camera-surface">
-        <video ref={video} autoPlay muted playsInline aria-label="Live camera preview" />
-        {!ready && (
-          <div className="camera-message">
-            {error ? <CameraOff size={32} /> : <LoaderCircle className="spin" size={30} />}
-            <p>{error || 'Waiting for camera permission…'}</p>
-          </div>
-        )}
-      </div>
-      <div className="dialog-actions">
-        <button onClick={onBrowse} className="btn btn-light">
-          <ImagePlus size={16} />
-          Choose a photo
-        </button>
-        <button className="btn btn-primary" disabled={!ready} onClick={capture}>
-          <Camera size={16} />
-          Take photo
+          Adjust grid
         </button>
       </div>
     </Dialog>

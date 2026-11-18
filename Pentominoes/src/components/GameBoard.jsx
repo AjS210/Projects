@@ -11,8 +11,17 @@ import {
   RotateCw,
   Undo2,
 } from 'lucide-react';
-import { COLS, LETTERS, PIECES, ROWS } from '../core/puzzle.js';
-import { gameCells, handleSquare, newGame, placePiece, turnPiece } from '../core/game.js';
+import { COLS, LETTERS, PIECES, ROWS, pointsFor } from '../core/puzzle.js';
+import {
+  bringForward,
+  gameCells,
+  handleSquare,
+  newGame,
+  pickPiece,
+  placePiece,
+  sizeOf,
+  turnPiece,
+} from '../core/game.js';
 import { Blocks } from './Artwork.jsx';
 import { Dialog } from './Dialog.jsx';
 import { SolutionResult } from './SolutionResult.jsx';
@@ -26,11 +35,6 @@ const transforms = [
 ];
 const rowLabel = (y) => String.fromCharCode(65 + y);
 const locationName = (x, y) => `${rowLabel(y)}${x + 1}`;
-const sizeOf = (points) => [
-  1 + Math.max(...points.map(([x]) => x)),
-  1 + Math.max(...points.map(([, y]) => y)),
-];
-
 function MarkedPiece({ letter, points, mini = false }) {
   const [x, y] = handleSquare(points);
   return (
@@ -59,7 +63,7 @@ function DragGhost({ points, preview }) {
   return createPortal(
     <div className="game-drag-layer" aria-hidden="true">
       <svg
-        className={`drag-ghost ${preview.onBoard && !preview.fits ? 'blocked' : ''}`}
+        className="drag-ghost"
         style={{
           left: preview.left,
           top: preview.top,
@@ -79,52 +83,64 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
   const plane = useRef(null),
     tray = useRef(null);
   const [selected, setSelected] = useState(null),
+    [aim, setAim] = useState(false),
     [focus, setFocus] = useState(0),
     [message, report] = useState(''),
     [reset, setReset] = useState(false);
-  const cells = gameCells(game),
-    placed = LETTERS.filter((l) => game[l].at);
+  const { pieces, stack: placed } = game;
+  const cells = gameCells(game);
+  const complete = !cells.includes('.'); // sixty in-bounds squares, each covered exactly once
+  const covered = cells.replaceAll('.', '').length;
+  const overlap = covered < placed.length * 5;
   function select(l) {
+    const next = bringForward(game, l);
+    if (next !== game) onChange(next);
     setSelected(l);
+    setAim(false);
     report('');
+  }
+  function choose(l, keyboard) {
+    const next = pickPiece(game, l);
+    if (next !== game) onChange(next);
+    setSelected(l);
+    setAim(true);
+    report(`${l} on top. Turn it, drag it, or tap any square to move it there.`);
+    if (keyboard) {
+      const { at, points } = next.pieces[l];
+      const [x, y] = handleSquare(points);
+      focusCell((at[1] + y) * COLS + at[0] + x);
+    }
   }
   function drop(l, at) {
     const next = placePiece(game, l, at);
-    if (next === game) {
-      report(`No room for ${l} there. Keep all five squares inside without overlapping.`);
-      return;
-    }
     onChange(next);
-    setSelected(l);
+    setSelected(at ? l : null);
+    setAim(false);
     if (!at) report(`${l} returned to the tray.`);
     else {
-      const [x, y] = handleSquare(next[l].points);
+      const piece = next.pieces[l];
+      const [x, y] = handleSquare(piece.points);
       report(
-        Object.values(next).every((p) => p.at)
+        !gameCells(next).includes('.')
           ? 'All twelve pieces fit! Your solution is ready below.'
-          : `${l} placed at ${locationName(at[0] + x, at[1] + y)}.`,
+          : `${l} placed at ${locationName(piece.at[0] + x, piece.at[1] + y)}.`,
       );
     }
   }
   function turn(action) {
-    if (!selected) return;
-    const next = turnPiece(game, selected, action);
-    if (next === game) {
-      report(`Not enough room to turn ${selected} here. Move it or return it to the tray.`);
-      return;
-    }
-    onChange(next);
+    if (!pieces[selected]?.at) return;
+    onChange(turnPiece(game, selected, action));
     report(
       `${selected} ${action === 'rotate' ? 'rotated clockwise' : action === 'horizontal' ? 'flipped left to right' : 'flipped top to bottom'}.`,
     );
   }
   const { start, preview, events } = usePieceDrag({ game, plane, tray, select, drop, report });
   function activateCell(i) {
-    if (cells[i] !== '.') select(cells[i]);
+    if (!aim && cells[i] !== '.') select(cells[i]);
     else if (selected) {
-      const [gx, gy] = handleSquare(game[selected].points);
+      const [gx, gy] = handleSquare(pieces[selected].points);
       drop(selected, [(i % COLS) - gx, Math.floor(i / COLS) - gy]);
-    } else report('Select a piece from the tray first.');
+    } else report('Choose a piece from the tray first.');
   }
   function focusCell(i) {
     plane.current?.querySelector(`[data-square="${i}"]`)?.focus();
@@ -143,18 +159,17 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       focusCell(next);
     }
   }
+  const activeLetter = preview?.letter ?? selected;
   const feedback = preview
     ? preview.onBoard
-      ? preview.fits
-        ? `Release to place ${preview.letter}.`
-        : 'Blocked — the piece must fit in five free squares.'
-      : preview.onTray && game[preview.letter].at
+      ? `Release to place ${preview.letter}.`
+      : preview.onTray && pieces[preview.letter].at
         ? 'Release to return this piece to the tray.'
-        : 'Drag into the frame to see where the piece fits.'
+        : 'Drag into the frame to place this piece.'
     : message ||
       (selected
-        ? `${selected} selected. Tap an empty square to place its marked cell there.`
-        : 'Drag a piece into the frame, or tap a piece and then an empty square.');
+        ? `${selected} on top. Drag or turn the piece on the board.`
+        : 'Drag a piece onto the board, or tap its card to add it in the middle.');
   return (
     <section className="panel game-panel" aria-labelledby="game-title" {...events}>
       <div className="panel-heading">
@@ -174,9 +189,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             <span>
               6 × 10 <i /> PLAYING FIELD
             </span>
-            <span className={placed.length === 12 ? 'complete' : ''}>
-              {placed.length} / 12 placed
-            </span>
+            <span className={complete ? 'complete' : ''}>{placed.length} / 12 placed</span>
           </div>
           <div className="game-frame">
             <span className="ruler-cross" aria-hidden="true">
@@ -219,19 +232,20 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                 {placed.map((l) => (
                   <g
                     key={l}
-                    className={`field-piece ${l === selected ? 'selected' : ''}`}
+                    data-letter={l}
+                    className={`field-piece ${l === activeLetter ? 'selected' : ''}`}
                     opacity={preview?.letter === l ? 0.3 : 1}
-                    transform={`translate(${game[l].at[0] * UNIT} ${game[l].at[1] * UNIT})`}
+                    transform={`translate(${pieces[l].at[0] * UNIT} ${pieces[l].at[1] * UNIT})`}
                   >
-                    <MarkedPiece letter={l} points={game[l].points} />
+                    <MarkedPiece letter={l} points={pieces[l].points} />
                   </g>
                 ))}
               </svg>
-              {!placed.length && !selected && (
+              {!placed.length && !activeLetter && (
                 <div className="field-prompt" aria-hidden="true">
                   <span>
                     <Hand size={16} />
-                    Drag your first piece here
+                    Drag a piece here or tap its card
                   </span>
                 </div>
               )}
@@ -252,7 +266,10 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                       onPointerDown={
                         l === '.'
                           ? undefined
-                          : (e) => start(e, l, [x - game[l].at[0], y - game[l].at[1]])
+                          : (e) =>
+                              start(e, l, [x - pieces[l].at[0], y - pieces[l].at[1]], () =>
+                                activateCell(i),
+                              )
                       }
                       onClick={() => activateCell(i)}
                     />
@@ -263,12 +280,22 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           </div>
         </div>
         <div className="game-kit">
-          <div className="game-transforms" role="group" aria-label="Turn selected piece">
+          <div className="turn-caption">
+            Board controls{' '}
+            <span>
+              {preview
+                ? `${preview.letter} moving`
+                : selected
+                  ? `${selected} selected`
+                  : 'Choose a piece'}
+            </span>
+          </div>
+          <div className="game-transforms" role="group" aria-label="Turn selected board piece">
             {transforms.map(([action, label, Icon]) => (
               <button
                 key={action}
                 className="btn btn-light"
-                disabled={!selected || Boolean(preview)}
+                disabled={!pieces[selected]?.at || Boolean(preview)}
                 onClick={() => turn(action)}
               >
                 <Icon size={16} />
@@ -280,7 +307,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             <h3>Piece tray</h3>
             <button
               className="text-btn"
-              disabled={!game[selected]?.at || Boolean(preview)}
+              disabled={!pieces[selected]?.at || Boolean(preview)}
               onClick={() => drop(selected, null)}
             >
               <Undo2 size={14} />
@@ -294,19 +321,19 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             aria-label="Pentomino pieces"
           >
             {LETTERS.map((l) => {
-              const { points, at } = game[l],
+              const { at } = pieces[l],
+                points = pointsFor(l),
                 [w, h] = sizeOf(points);
               return (
                 <button
                   key={l}
                   aria-label={`${l} piece, ${at ? 'on board' : 'in tray'}`}
-                  aria-pressed={selected === l}
+                  aria-pressed={activeLetter === l}
                   className={`tray-piece ${at ? 'on-board' : ''}`}
-                  onPointerDown={(e) => start(e, l, handleSquare(points))}
-                  onClick={(e) => {
-                    select(l);
-                    if (e.detail === 0) focusCell(focus);
-                  }}
+                  onPointerDown={(e) =>
+                    start(e, l, handleSquare(pieces[l].points), () => choose(l, false))
+                  }
+                  onClick={(e) => choose(l, e.detail === 0)}
                 >
                   <span className="tray-name">{l}</span>
                   {at && <Check size={12} className="tray-check" />}
@@ -322,7 +349,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         </div>
         <div className="game-foot">
           <p id="play-hint" role="status">
-            {feedback}
+            {feedback} {overlap && `Overlap · ${covered}/60 squares covered.`}
           </p>
           <button
             className="text-btn"
@@ -334,15 +361,15 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           </button>
         </div>
       </div>
-      {placed.length === LETTERS.length && (
+      {complete && (
         <SolutionResult cells={cells} collection={collection} onSave={onSave} onView={onView} />
       )}
-      {preview && <DragGhost points={game[preview.letter].points} preview={preview} />}
+      {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
       {reset && (
         <Dialog
           title="Start a new game?"
           eyebrow="GAME BOARD"
-          description="Return all twelve pieces to the tray. Your solution grid and saved solutions won’t change."
+          description="Return all twelve pieces to the tray. Your uploads and saved solutions won’t change."
           onClose={() => setReset(false)}
         >
           <div className="dialog-actions">
@@ -353,7 +380,9 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
               className="btn btn-primary"
               onClick={() => {
                 onChange(newGame());
-                select(null);
+                setSelected(null);
+                setAim(false);
+                report('');
                 setReset(false);
               }}
             >

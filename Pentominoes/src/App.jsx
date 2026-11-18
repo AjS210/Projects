@@ -11,14 +11,16 @@ import {
   Gamepad2,
   BookmarkPlus,
   HardDrive,
-  RotateCcw,
+  BookOpen,
 } from 'lucide-react';
 import { BrandMark, HeroArt } from './components/Artwork.jsx';
-import { Scanner } from './components/Scanner.jsx';
+import { CollectionUpload } from './components/CollectionUpload.jsx';
+import { UploadReviewDialog } from './components/UploadReviewDialog.jsx';
+import { Board } from './components/Board.jsx';
 import { GameBoard } from './components/GameBoard.jsx';
 import { readGameDraft, writeGameDraft } from './core/gameDraft.js';
 import { Dialog, Notice } from './components/Dialog.jsx';
-import { AlignDialog, CameraDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
+import { AlignDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
 import { Collection, SaveDialog, EntryDialog } from './components/Collection.jsx';
 import { BLANK, SAMPLE } from './core/puzzle.js';
@@ -28,7 +30,7 @@ import { ImportDialog } from './components/ImportDialog.jsx';
 import { PhotoBoardsDialog } from './components/PhotoBoardsDialog.jsx';
 import { FULL_FRAME } from './core/recognition.js';
 import { boardAtFrame, rememberReview } from './core/photoFrames.js';
-import { openPhoto, scanPhoto, PHOTO_TYPES } from './core/photo.js';
+import { openPhoto, scanPhoto } from './core/photo.js';
 
 function readLocal() {
   try {
@@ -48,7 +50,7 @@ export default function App() {
   const [game, setGame] = useState(readGameDraft),
     [saveDraft, setSaveDraft] = useState(null);
   const [photo, setPhoto] = useState(null),
-    [cells, setCells] = useState(SAMPLE),
+    [cells, setCells] = useState(BLANK),
     [corners, setCorners] = useState(FULL_FRAME);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -57,11 +59,17 @@ export default function App() {
   const [photoBoards, setPhotoBoards] = useState([]);
   const boardIndex = useMemo(() => boardAtFrame(photoBoards, corners), [photoBoards, corners]);
   const [toast, setToast] = useState(null);
-  const controller = useRef(null),
-    nativeCamera = useRef(null),
-    cameraFile = useRef(null);
+  const controller = useRef(null);
+  function stopReading() {
+    if (!controller.current) return;
+    controller.current.abort();
+    controller.current = null;
+    setBusy(false);
+    setError('Reading stopped. Use Adjust grid to read the photo again.');
+  }
   useEffect(() => {
     const navigate = () => {
+      stopReading();
       setTab(tabFromUrl());
       setModal(null);
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -90,11 +98,11 @@ export default function App() {
   const go = (target) => {
     location.hash = target;
   };
-  const openEntry = (r) => {
-    setOpened(r.id);
+  const openEntry = (r, back = null) => {
+    setOpened({ id: r.id, back });
     setModal('entry');
   };
-  const record = local.records.find((r) => r.id === opened);
+  const record = local.records.find((r) => r.id === opened?.id);
   function showReading(reading) {
     setCells(reading.cells);
     setCorners(reading.corners);
@@ -108,7 +116,14 @@ export default function App() {
     controller.current?.abort();
     const ctl = new AbortController();
     controller.current = ctl;
-    close();
+    setModal('review');
+    if (file) {
+      // Never offer the previous board for confirmation while decoding a new file.
+      setPhoto(null);
+      setPhotoBoards([]);
+      setCorners(FULL_FRAME);
+      setCells(BLANK);
+    }
     setBusy(true);
     setError('');
     try {
@@ -116,10 +131,7 @@ export default function App() {
       if (file) {
         currentPhoto = await openPhoto(file);
         ctl.signal.throwIfAborted();
-        setPhotoBoards([]);
         setPhoto(currentPhoto);
-        setCells(BLANK);
-        setCorners(FULL_FRAME);
       } else if (frame) {
         // Show the submitted region immediately. If the worker fails, retry from
         // this location instead of showing the old board's letters or frame.
@@ -135,28 +147,20 @@ export default function App() {
         showReading(result);
       } else {
         loadDetections(result);
-        if (result.boards?.length > 1) {
-          // The board switcher stays available if the player opened a save dialog.
-          setModal((current) => current ?? 'boards');
-          return;
-        }
       }
-      notify(
-        result.found === 12
-          ? 'All 12 piece shapes recognized.'
-          : `${result.found} of 12 pieces recognized. Review the frame and grid.`,
-      );
     } catch (err) {
       if (!ctl.signal.aborted)
         setError(err.message || 'The image could not be read. Try a different photo.');
     } finally {
+      if (controller.current === ctl) controller.current = null;
       if (!ctl.signal.aborted) setBusy(false);
     }
   }
   const upload = (file) => readBoard({ file });
-  const takePhoto = () => {
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) nativeCamera.current?.click();
-    else setModal('camera');
+  const review = () => setModal('review');
+  const cancelReview = () => {
+    stopReading();
+    close();
   };
   function store(records) {
     try {
@@ -184,8 +188,7 @@ export default function App() {
     setSaveDraft({ cells, reference });
     setModal('save');
   }
-  function save() {
-    const { cells, reference } = saveDraft;
+  function saveCells(cells, reference) {
     const { records, added } = mergeRecords(latest(), [{ cells }]);
     store(records);
     close();
@@ -211,18 +214,6 @@ export default function App() {
     notify(
       `${added} solution${added === 1 ? '' : 's'} added${skipped ? ` · ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.`,
     );
-  }
-  function loadLidGrid() {
-    controller.current?.abort();
-    setBusy(false);
-    setPhotoBoards([]);
-    setPhoto(null);
-    setCorners(FULL_FRAME);
-    setCells(SAMPLE);
-    setError('');
-    close();
-    go('workspace');
-    notify('Lid solution loaded.');
   }
   return (
     <>
@@ -302,24 +293,7 @@ export default function App() {
               onSave={requestSave}
               onView={openEntry}
             />
-            <Scanner
-              photo={photo}
-              photoBoards={photoBoards}
-              corners={corners}
-              boardIndex={boardIndex}
-              onChooseBoard={() => setModal('boards')}
-              cells={cells}
-              collection={local}
-              busy={busy}
-              error={error}
-              onUpload={upload}
-              onCamera={takePhoto}
-              onAlign={() => setModal('align')}
-              onExpand={() => setModal('photo')}
-              onEdit={() => setModal('edit')}
-              onSave={requestSave}
-              onView={openEntry}
-            />
+            <CollectionUpload photo={photo} onUpload={upload} onReview={review} />
           </div>
         ) : (
           <Collection
@@ -341,34 +315,11 @@ export default function App() {
           </span>
         </footer>
       </main>
-      <input
-        type="file"
-        accept="image/*"
-        ref={nativeCamera}
-        capture="environment"
-        hidden
-        aria-label="Take a board photo"
-        onChange={(e) => {
-          if (e.target.files[0]) upload(e.target.files[0]);
-          e.target.value = '';
-        }}
-      />
-      <input
-        type="file"
-        accept={PHOTO_TYPES}
-        ref={cameraFile}
-        hidden
-        aria-label="Choose an existing photo"
-        onChange={(e) => {
-          if (e.target.files[0]) upload(e.target.files[0]);
-          e.target.value = '';
-        }}
-      />
       {modal === 'guide' && (
         <Dialog
           title="A quick guide to PentoLog"
           eyebrow="THE WORKBENCH MANUAL"
-          description="Play with digital pieces or scan a physical puzzle. To put the puzzle away, load the lid’s pack-away arrangement into Solution grid."
+          description="Play with digital pieces or scan a physical puzzle. The lid’s pack-away grid is available here when you need it."
           onClose={close}
         >
           <ol className="guide-steps">
@@ -379,10 +330,11 @@ export default function App() {
               <div>
                 <h3>Play the 6 × 10 board</h3>
                 <p>
-                  Drag a piece from the tray, or select it and tap an empty square for its marked
-                  cell. Flip it either way or rotate it clockwise. Drag a placed piece to move it;
-                  Return to tray lifts it out. With a keyboard, select a tray piece, use the arrow
-                  keys on the board and press Enter to place. All twelve must fit without overlap.
+                  Drag a piece onto the board, or tap its card to add it in the middle. The flip and
+                  rotate buttons turn the selected board piece. Pieces can overlap while you work;
+                  tap a card to bring that piece on top, then drag it or tap its destination. With a
+                  keyboard, choose a card, arrow to a square and press Enter. To finish, cover all
+                  sixty squares without overlap.
                 </p>
               </div>
             </li>
@@ -393,9 +345,9 @@ export default function App() {
               <div>
                 <h3>Capture your board</h3>
                 <p>
-                  Photograph a complete 6 × 10 rectangle in even light. You can also upload a JPG of
-                  a sheet and choose among its complete boards. Keep all four corners visible.
-                  Distinct piece colors or clear seams work best.
+                  In Collection Upload, open the image picker and choose a photo, or take one if
+                  your device offers a camera. Include the whole 6 × 10 board in even light.
+                  Screenshots with multiple complete boards work too.
                 </p>
               </div>
             </li>
@@ -406,9 +358,9 @@ export default function App() {
               <div>
                 <h3>Check the grid</h3>
                 <p>
-                  In Adjust frame, drag inside the grid to move it, or drag its linked corners to
-                  resize it. On a screenshot you can jump to another detected board. Tap Read grid,
-                  then use Edit grid to correct any cells.
+                  The upload opens for review. Choose Adjust grid to move or resize the frame, then
+                  Read grid to check the new reading. Edit cells corrects individual letters. Save
+                  to collection when the reading is right, or cancel without saving.
                 </p>
               </div>
             </li>
@@ -435,9 +387,9 @@ export default function App() {
             </p>
           </div>
           <div className="dialog-actions">
-            <button className="text-btn" onClick={loadLidGrid}>
-              <RotateCcw size={14} />
-              Load lid solution
+            <button className="text-btn" onClick={() => setModal('lid')}>
+              <BookOpen size={14} />
+              View lid solution
             </button>
             <button className="btn btn-primary" onClick={close}>
               Got it
@@ -446,15 +398,54 @@ export default function App() {
           </div>
         </Dialog>
       )}
+      {modal === 'lid' && (
+        <Dialog
+          title="Pack-away grid"
+          eyebrow="LID REFERENCE"
+          description="Solution #2182 · X group B3"
+          onClose={close}
+        >
+          <div className="board-stage detail-stage">
+            <Board cells={SAMPLE} />
+          </div>
+          <div className="dialog-actions">
+            <button className="btn btn-light" onClick={() => setModal('guide')}>
+              Back to guide
+            </button>
+            <button className="btn btn-primary" onClick={close}>
+              Done
+            </button>
+          </div>
+        </Dialog>
+      )}
+      {modal === 'review' && (
+        <UploadReviewDialog
+          photo={photo}
+          photoBoards={photoBoards}
+          corners={corners}
+          boardIndex={boardIndex}
+          onChooseBoard={() => setModal('boards')}
+          cells={cells}
+          collection={local}
+          busy={busy}
+          error={error}
+          onClose={cancelReview}
+          onAlign={() => setModal('align')}
+          onExpand={() => setModal('photo')}
+          onEdit={() => setModal('edit')}
+          onSave={saveCells}
+          onView={(r) => openEntry(r, 'review')}
+        />
+      )}
       {modal === 'boards' && photo && photoBoards.length > 1 && (
         <PhotoBoardsDialog
           boards={photoBoards}
           photo={photo}
           active={boardIndex}
-          onClose={close}
+          onClose={review}
           onChoose={(i) => {
             showReading(photoBoards[i].review ?? photoBoards[i]);
-            close();
+            review();
           }}
           onImport={() =>
             importRecords(
@@ -471,42 +462,37 @@ export default function App() {
           photo={photo}
           corners={corners}
           boards={photoBoards}
-          onClose={close}
+          onClose={review}
           onRead={(frame) => readBoard({ frame })}
         />
       )}
       {modal === 'photo' && photo && (
-        <PhotoDialog photo={photo} onClose={close} onAlign={() => setModal('align')} />
+        <PhotoDialog photo={photo} onClose={review} onAlign={() => setModal('align')} />
       )}
-      {modal === 'camera' && (
-        <CameraDialog
-          onClose={close}
-          onFile={upload}
-          onBrowse={() => {
-            close();
-            cameraFile.current?.click();
-          }}
-        />
-      )}
-      {modal === 'edit' && (
+      {modal === 'edit' && photo && (
         <GridEditor
           cells={cells}
-          onClose={close}
+          onClose={review}
           onApply={(draft) => {
             if (draft !== cells)
               setPhotoBoards((boards) => rememberReview(boards, { cells: draft, corners }));
             setCells(draft);
-            close();
-            notify('Grid changes applied.');
+            review();
           }}
         />
       )}
-      {modal === 'save' && saveDraft && <SaveDialog {...saveDraft} onClose={close} onSave={save} />}
+      {modal === 'save' && saveDraft && (
+        <SaveDialog
+          {...saveDraft}
+          onClose={close}
+          onSave={() => saveCells(saveDraft.cells, saveDraft.reference)}
+        />
+      )}
       {modal === 'import' && <ImportDialog onClose={close} onImport={importRecords} />}
       {modal === 'entry' && record && (
         <EntryDialog
           record={record}
-          onClose={close}
+          onClose={() => setModal(opened.back)}
           onRemove={(id) => {
             store(latest().filter((r) => r.id !== id));
             close();
