@@ -1,37 +1,44 @@
-import { canonicalKey, validateBoard, parseGrids } from './puzzle.js';
+import { validateBoard, parseGrids } from './puzzle.js';
 
 export const STORE = 'pentolog.collection.v1';
-export const defaultName = (n) => `Solution ${String(n).padStart(3, '0')}`;
 export const formatDate = (value) =>
   new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(
     new Date(value),
   );
-export function unpackRecords(text) {
+const label = (s) => (typeof s === 'string' ? s.trim().slice(0, 80) : '');
+function personalFields(s, id = s.id) {
+  return {
+    id: typeof id === 'string' && id ? id : crypto.randomUUID(),
+    name: label(s.name),
+    ...(label(s.previousName) && { previousName: label(s.previousName) }),
+    cells: s.cells,
+    createdAt:
+      typeof s.createdAt === 'string' && Number.isFinite(Date.parse(s.createdAt))
+        ? s.createdAt
+        : new Date().toISOString(),
+  };
+}
+function backupEntries(text) {
   const data = JSON.parse(text);
-  if (data.version !== 1 || !Array.isArray(data.solutions))
+  if (data?.version !== 1 || !Array.isArray(data.solutions))
     throw new Error('This is not a PentoLog collection backup.');
-  return data.solutions.map((s, i) => {
+  return data.solutions;
+}
+export function unpackRecords(text) {
+  return backupEntries(text).map((s, i) => {
     if (typeof s?.cells !== 'string' || s.cells.length !== 60 || !validateBoard(s.cells).valid)
       throw new Error(`Entry ${i + 1} is not a valid pentomino grid.`);
-    return {
-      id: typeof s.id === 'string' && s.id ? s.id : crypto.randomUUID(),
-      name:
-        typeof s.name === 'string' && s.name.trim()
-          ? s.name.trim().slice(0, 80)
-          : defaultName(i + 1),
-      cells: s.cells,
-      createdAt:
-        typeof s.createdAt === 'string' && Number.isFinite(Date.parse(s.createdAt))
-          ? s.createdAt
-          : new Date().toISOString(),
-    };
+    return personalFields(s);
   });
 }
-export function readCollection() {
-  const text = localStorage.getItem(STORE);
-  return text ? unpackRecords(text) : [];
-}
-export const packRecords = (records) => JSON.stringify({ version: 1, solutions: records }, null, 2);
+// Only personal records go into storage/exports. Reference metadata is always
+// looked up from the grid, never trusted from an imported name, number or group.
+export const packRecords = (records) =>
+  JSON.stringify(
+    { version: 1, solutions: records.map(({ reference, ...personal }) => personal) },
+    null,
+    2,
+  );
 export function writeCollection(records) {
   localStorage.setItem(STORE, packRecords(records));
 }
@@ -39,27 +46,44 @@ export function parseImport(text) {
   if (text.trimStart().startsWith('{')) return unpackRecords(text);
   return parseGrids(text).map((cells) => ({ cells }));
 }
-export function mergeRecords(existing, incoming) {
-  const keys = new Set(existing.map((s) => canonicalKey(s.cells)));
-  const records = [...existing];
-  let added = 0;
-  for (const entry of incoming) {
-    if (
-      typeof entry?.cells !== 'string' ||
-      entry.cells.length !== 60 ||
-      !validateBoard(entry.cells).valid
-    )
-      throw new Error('Only complete boards with all twelve verified shapes can be imported.');
-    const key = canonicalKey(entry.cells);
-    if (keys.has(key)) continue;
-    keys.add(key);
-    records.unshift({
-      ...entry,
-      id: crypto.randomUUID(),
-      name: entry.name || defaultName(records.length + 1),
-      createdAt: entry.createdAt || new Date().toISOString(),
-    });
-    added++;
+
+export function createCollectionStore(lookup) {
+  function identify(s) {
+    const ref = lookup(s?.cells);
+    if (!ref)
+      throw new Error(
+        'Only complete boards with all twelve verified shapes in the 6 × 10 reference can be saved.',
+      );
+    return ref;
   }
-  return { records, added, skipped: incoming.length - added };
+  function titled(s, reference, id) {
+    const { name, previousName, ...personal } = personalFields(s, id);
+    const alias = previousName || name;
+    return {
+      ...personal,
+      name: reference.name,
+      ...(alias && alias !== reference.name && { previousName: alias }),
+      reference,
+    };
+  }
+  function readCollection() {
+    const text = localStorage.getItem(STORE);
+    // Reading a legacy archive does not rewrite it. Its ID, date, as-played
+    // orientation and former name survive the next save or export.
+    return text ? backupEntries(text).map((s) => titled(s, identify(s))) : [];
+  }
+  function mergeRecords(existing, incoming) {
+    const records = [...existing];
+    const numbers = new Set(existing.map((s) => identify(s).number));
+    let added = 0;
+    for (const entry of incoming) {
+      const ref = identify(entry);
+      if (numbers.has(ref.number)) continue;
+      numbers.add(ref.number);
+      records.unshift(titled(entry, ref, crypto.randomUUID()));
+      added++;
+    }
+    return { records, added, skipped: incoming.length - added };
+  }
+  return { readCollection, mergeRecords };
 }

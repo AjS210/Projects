@@ -18,15 +18,9 @@ import { Dialog, Notice } from './components/Dialog.jsx';
 import { AlignDialog, CameraDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
 import { Collection, SaveDialog, EntryDialog } from './components/Collection.jsx';
-import {
-  BLANK,
-  SAMPLE,
-  SAMPLE_FRAME,
-  SAMPLE_PHOTO,
-  canonicalKey,
-  validateBoard,
-} from './core/puzzle.js';
-import { readCollection, writeCollection, mergeRecords, STORE } from './core/collection.js';
+import { BLANK, SAMPLE, SAMPLE_FRAME, SAMPLE_PHOTO, validateBoard } from './core/puzzle.js';
+import { writeCollection, STORE } from './core/collection.js';
+import { lookupSolution, readCollection, mergeRecords } from './catalogue.js';
 import { ImportDialog } from './components/ImportDialog.jsx';
 import { PhotoBoardsDialog } from './components/PhotoBoardsDialog.jsx';
 import { FULL_FRAME } from './core/recognition.js';
@@ -62,11 +56,14 @@ export default function App() {
     nativeCamera = useRef(null),
     cameraFile = useRef(null);
   const check = useMemo(() => validateBoard(cells), [cells]);
-  const match = useMemo(() => {
-    if (!check.valid) return null;
-    const key = canonicalKey(cells);
-    return local.records.find((r) => canonicalKey(r.cells) === key);
-  }, [local.records, cells, check.valid]);
+  const reference = useMemo(
+    () => (check.valid ? lookupSolution(cells) : null),
+    [cells, check.valid],
+  );
+  const match = useMemo(
+    () => reference && local.records.find((r) => r.reference.number === reference.number),
+    [local.records, reference],
+  );
   useEffect(() => {
     const navigate = () => {
       setTab(tabFromUrl());
@@ -180,14 +177,14 @@ export default function App() {
       throw new Error('Your collection could not be read. No saved data has been changed.');
     }
   }
-  function save(name) {
-    if (!check.valid || busy) throw new Error('Verify all twelve pieces before saving.');
-    const { records, added } = mergeRecords(latest(), [{ name, cells }]);
+  function save() {
+    if (!reference || busy) throw new Error('Verify all twelve pieces before saving.');
+    const { records, added } = mergeRecords(latest(), [{ cells }]);
     store(records);
     close();
     notify(
       added
-        ? `“${name}” saved to your collection.`
+        ? `${reference.name} saved to your collection.`
         : 'This solution is already in your collection.',
     );
   }
@@ -282,7 +279,7 @@ export default function App() {
             <h1>{tab === 'collection' ? 'Solution collection' : 'Solution scanner'}</h1>
             <p>
               {tab === 'collection'
-                ? 'Every original solve, in one place. Mirrored boards count as one.'
+                ? 'Your finds by catalogue number. Explore them by the position of the X piece.'
                 : 'Capture your board, check for duplicates, and collect your unique solutions.'}
             </p>
           </div>
@@ -298,6 +295,7 @@ export default function App() {
             onChooseBoard={() => setModal('boards')}
             cells={cells}
             check={check}
+            reference={reference}
             match={match}
             busy={busy}
             error={error}
@@ -396,8 +394,9 @@ export default function App() {
               <div>
                 <h3>Keep only the originals</h3>
                 <p>
-                  Save a verified solution to your collection. Left–right mirrors, top–bottom
-                  mirrors, and 180° turns all match the same entry.
+                  Each verified grid gets its Isomer Design number and X-piece group. Mirrored
+                  boards and half-turns share a number. Only the boards you save or import count
+                  toward your collection.
                 </p>
               </div>
             </li>
@@ -477,8 +476,8 @@ export default function App() {
           }}
         />
       )}
-      {modal === 'save' && (
-        <SaveDialog cells={cells} next={local.records.length + 1} onClose={close} onSave={save} />
+      {modal === 'save' && reference && (
+        <SaveDialog cells={cells} reference={reference} onClose={close} onSave={save} />
       )}
       {modal === 'import' && <ImportDialog onClose={close} onImport={importRecords} />}
       {modal === 'entry' && record && (

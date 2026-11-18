@@ -1049,7 +1049,6 @@ p {
   margin: 13px 0 7px;
   color: var(--text);
 }
-.text-field,
 textarea,
 .search-box {
   border: 1px solid var(--line-strong);
@@ -1058,14 +1057,9 @@ textarea,
   color: var(--ink);
   caret-color: var(--accent);
 }
-.text-field,
 textarea {
   width: 100%;
   padding: 10px 12px;
-  line-height: 1.5;
-  font-size: 14px;
-}
-textarea {
   font-family: var(--mono);
   font-size: 12px;
   resize: vertical;
@@ -1074,7 +1068,6 @@ textarea {
   tab-size: 2;
 }
 textarea::placeholder,
-.text-field::placeholder,
 .search-box input::placeholder {
   color: var(--quiet);
 }
@@ -1376,6 +1369,94 @@ textarea::placeholder,
 .collection-panel {
   min-height: 360px;
   overflow: hidden;
+}
+.x-groups {
+  border-bottom: 1px solid var(--line);
+  padding-inline: clamp(15px, 2vw, 22px);
+}
+.x-groups summary,
+.x-groups summary > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.x-groups summary {
+  justify-content: space-between;
+  min-height: 44px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 620;
+}
+.x-groups summary::-webkit-details-marker {
+  display: none;
+}
+.x-groups summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.x-group-current {
+  font: 11px var(--mono);
+  color: var(--accent);
+}
+.x-groups[open] .x-group-current svg {
+  transform: rotate(180deg);
+}
+.x-group-body {
+  padding-bottom: 14px;
+}
+.x-group-body p,
+.previous-name {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.x-group-body a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.x-group-options {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  margin-block: 12px;
+}
+.x-group-options button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 8px 2px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--well);
+  font-size: 12px;
+}
+.x-group-options button[aria-pressed='true'] {
+  background: var(--accent-well);
+  color: var(--accent-hover);
+  border-color: var(--accent);
+}
+.x-position {
+  width: 42px;
+  height: auto;
+}
+.x-group-options small {
+  font: 10px var(--mono);
+}
+.detail-meta .x-position {
+  width: 38px;
+}
+.previous-name {
+  margin-top: 9px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .x-group-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .collection-heading {
   display: flex;

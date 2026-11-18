@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Archive,
   ArrowUpRight,
@@ -6,7 +6,6 @@ import {
   Check,
   ClipboardCopy,
   Download,
-  Grid2X2,
   Import,
   Layers,
   Search,
@@ -17,14 +16,33 @@ import {
 import { Board } from './Board.jsx';
 import { Dialog, Notice } from './Dialog.jsx';
 import { asTable } from '../core/puzzle.js';
-import { defaultName, formatDate, packRecords } from '../core/collection.js';
+import { formatDate, packRecords } from '../core/collection.js';
+import { XGroupFilter, XPosition } from './XGroups.jsx';
 
 export function Collection({ records, onImport, onOpen, onScan }) {
   const [search, setSearch] = useState(''),
-    [limit, setLimit] = useState(12);
-  const filtered = records.filter((r) =>
-    r.name.toLowerCase().includes(search.trim().toLowerCase()),
+    [limit, setLimit] = useState(12),
+    [group, setGroup] = useState('');
+  const { sorted, counts } = useMemo(() => {
+    const counts = {};
+    for (const { reference } of records)
+      counts[reference.group] = (counts[reference.group] || 0) + 1;
+    return { sorted: [...records].sort((a, b) => a.reference.number - b.reference.number), counts };
+  }, [records]);
+  const query = search.trim().toLowerCase(),
+    number = /^(?:solution\s+#|#)?(\d+)$/.exec(query);
+  const filtered = sorted.filter(
+    (r) =>
+      (!group || r.reference.group === group) &&
+      (number
+        ? r.reference.number === Number(number[1])
+        : r.name.toLowerCase().includes(query) ||
+          Boolean(r.previousName?.toLowerCase().includes(query))),
   );
+  function changeGroup(id) {
+    setGroup(id);
+    setLimit(12);
+  }
   function download() {
     const url = URL.createObjectURL(new Blob([packRecords(records)], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -59,12 +77,13 @@ export function Collection({ records, onImport, onOpen, onScan }) {
           </button>
         </div>
       </div>
+      <XGroupFilter group={group} counts={counts} total={records.length} onChange={changeGroup} />
       {records.length > 0 && (
         <div className="search-box">
           <Search size={16} />
           <input
             aria-label="Search solutions"
-            placeholder="Search solutions by name…"
+            placeholder="Search by number or earlier name…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -97,9 +116,19 @@ export function Collection({ records, onImport, onOpen, onScan }) {
         <div className="empty-collection small">
           <Search size={26} />
           <h3>No solutions found</h3>
-          <p>Try a different name, or clear your search.</p>
-          <button className="btn btn-light" onClick={() => setSearch('')}>
-            Clear search
+          <p>
+            {group
+              ? `No saved boards match in X group ${group}.`
+              : 'Try a different solution number or earlier name.'}
+          </p>
+          <button
+            className="btn btn-light"
+            onClick={() => {
+              setSearch('');
+              changeGroup('');
+            }}
+          >
+            Show all saved solutions
           </button>
         </div>
       ) : (
@@ -137,66 +166,47 @@ export function Collection({ records, onImport, onOpen, onScan }) {
     </section>
   );
 }
-export function SaveDialog({ cells, next, onClose, onSave }) {
-  const [name, setName] = useState(defaultName(next)),
-    [error, setError] = useState('');
-  const submit = (e) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError('Give this solution a name.');
-      return;
-    }
-    try {
-      onSave(name.trim());
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+export function SaveDialog({ cells, reference, onClose, onSave }) {
+  const [error, setError] = useState('');
   return (
     <Dialog
-      title="Save your solution"
+      title={`Save ${reference.name}`}
       eyebrow="COLLECTION"
-      description="Give this verified grid a name so you can find it again."
+      description="This number comes from the Isomer Design catalogue. Your board is saved in the orientation you played."
       onClose={onClose}
     >
-      <form onSubmit={submit}>
-        <div className="save-preview">
-          <div>
-            <Board cells={cells} labels={false} letters={false} />
-          </div>
-          <span>
-            <span className="small-label">VERIFIED BOARD</span>
-            <strong>6 × 10 pentominoes</strong>
-            <small>
-              <ShieldCheck size={13} />
-              All 12 pieces verified
-            </small>
-          </span>
+      <div className="save-preview">
+        <div>
+          <Board cells={cells} labels={false} letters={false} />
         </div>
-        <label className="field-label" htmlFor="solution-name">
-          Solution name
-        </label>
-        <input
-          id="solution-name"
-          className="text-field"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={80}
-          required
-          autoFocus
-          onFocus={(e) => e.target.select()}
-        />
-        {error && <Notice error>{error}</Notice>}
-        <div className="dialog-actions">
-          <button type="button" className="btn btn-light" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" type="submit">
-            <BookmarkPlus size={15} />
-            Save to collection
-          </button>
-        </div>
-      </form>
+        <span>
+          <span className="small-label">VERIFIED BOARD</span>
+          <strong>X group {reference.group}</strong>
+          <small>
+            <ShieldCheck size={13} />
+            All 12 pieces verified
+          </small>
+        </span>
+      </div>
+      {error && <Notice error>{error}</Notice>}
+      <div className="dialog-actions">
+        <button className="btn btn-light" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            try {
+              onSave();
+            } catch (err) {
+              setError(err.message);
+            }
+          }}
+        >
+          <BookmarkPlus size={15} />
+          Save to collection
+        </button>
+      </div>
     </Dialog>
   );
 }
@@ -226,13 +236,14 @@ export function EntryDialog({ record, onClose, onRemove }) {
       </div>
       <div className="detail-meta">
         <span>
-          <Grid2X2 size={14} />6 × 10 board
+          <XPosition group={record.reference.group} />X group {record.reference.group}
         </span>
         <span>
           <ShieldCheck size={14} />
           12 verified pieces
         </span>
       </div>
+      {record.previousName && <p className="previous-name">Earlier name: {record.previousName}</p>}
       {fallback && (
         <>
           <label className="field-label" htmlFor="copy-data">

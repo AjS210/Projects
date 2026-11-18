@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Dialog, Notice } from './Dialog.jsx';
 import { Board } from './Board.jsx';
+import { lookupSolution } from '../catalogue.js';
 import {
   EXPORT_HELP,
   IMPORT_TYPES,
@@ -165,7 +166,7 @@ export function ImportDialog({ onClose, onImport }) {
                   {records.slice(0, 4).map((r, i) => (
                     <div key={i}>
                       <Board cells={r.cells} labels={false} letters={false} />
-                      <small title={r.name}>{r.name || `Board ${i + 1}`}</small>
+                      <small title={r.name}>{lookupSolution(r.cells)?.name}</small>
                     </div>
                   ))}
                 </div>

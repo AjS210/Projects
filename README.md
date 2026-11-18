@@ -7,7 +7,7 @@
 
 ## Open PentoLog
 
-[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/) on your phone or computer.
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/) on your phone or computer. The [6 × 10 reference catalogue](./Pentominoes/reference/isomer-design/) documents the 2,339 solution numbers and seven X-piece groups used to identify saved boards.
 
 PentoLog uses the same browser-storage key as before. On the same browser and `ajs210.github.io` origin, moving to a different path does not require re-importing your collection. **Collection → Export** makes a backup.
 

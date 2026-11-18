@@ -32,6 +32,7 @@ export function Scanner({
   onChooseBoard,
   cells,
   check,
+  reference,
   match,
   busy,
   error,
@@ -51,7 +52,7 @@ export function Scanner({
   const setPiece = (l) => setHighlight((v) => (v === l ? null : l));
   const state = busy
     ? 'busy'
-    : !check.valid
+    : !reference
       ? 'review'
       : collectionError
         ? 'unavailable'
@@ -262,8 +263,8 @@ export function Scanner({
                     busy: 'Reading your photo',
                     review: 'Review needed',
                     unavailable: 'Check unavailable',
-                    match: 'Already in collection',
-                    unique: 'Unique solution',
+                    match: reference?.name,
+                    unique: reference?.name,
                   }[state]
                 }
               </strong>
@@ -273,13 +274,13 @@ export function Scanner({
                     busy: 'Looking for the twelve piece shapes.',
                     review: 'Crop to one full board, adjust the frame, or edit cells.',
                     unavailable: 'Your local collection could not be read.',
-                    match: `${matchType}: “${match?.name}”`,
-                    unique: 'No matching or mirrored solution found.',
+                    match: `Already saved · ${matchType}`,
+                    unique: `New to you · X group ${reference?.group}`,
                   }[state]
                 }
               </span>
             </div>
-            {match && !busy && check.valid ? (
+            {match && !busy && reference ? (
               <button className="btn btn-primary result-cta" onClick={onView}>
                 View entry
                 <ArrowUpRight size={15} />
@@ -287,7 +288,7 @@ export function Scanner({
             ) : (
               <button
                 className="btn btn-primary result-cta"
-                disabled={busy || !check.valid || Boolean(collectionError)}
+                disabled={busy || !reference || Boolean(collectionError)}
                 onClick={onSave}
               >
                 <BookmarkPlus size={15} />

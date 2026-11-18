@@ -13,10 +13,16 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Photograph a compl
    - Drag a **corner** to resize. Both handles on a side move together; the opposite corner stays fixed. Arrow keys fine-tune the focused frame or corner (hold Shift for larger steps). **Straighten edges** is available for tilted frames.
    - **Read grid** scans the highlighted region and keeps the other detected boards available. **Reset frame** undoes adjustments to the chosen frame. Closing without reading discards the draft.
    - In **Edit grid**, pick a letter and paint cells, or focus a cell and type. Arrow keys move between cells. Editing includes erase, undo, and paste from Sheets.
-4. **Save an original.** All 60 cells must form exactly one each of F, I, L, N, P, T, U, V, W, X, Y, and Z. The duplicate check distinguishes exact matches, horizontal and vertical reflections, and half-turns. A matching entry can be opened instead of saved again.
-5. **Browse your collection.** On a phone, three board thumbnails fit in each row. Tap a board to see its name, saved date, and full grid. You can still search by name.
+4. **Save an original.** When all twelve shapes are verified, the workspace shows the board’s Isomer Design number. Confirm **Save to collection**; you do not have to name it. A horizontal or vertical reflection or a half-turn gets the same number. An already-saved board can be opened instead.
+5. **Browse your collection.** The image-only gallery stays three across on a phone and is ordered by reference number. Tap a board for its number, X group, date and as-played grid. Search for an exact number (e.g. `2182` or `#2182`) or an earlier name. Expand **X-piece groups** to filter your finds and see how many you have out of each group’s total.
 
-**Storage:** Only named grids and dates are saved, in this browser's local storage. Photos are processed locally and are not uploaded or saved to the collection. Clearing site data, changing browsers, or leaving a private session can lose the collection. Use **Collection → Export** for a JSON backup, then **Import grids** to restore it or transfer it to another device. Each saved entry also has **Copy grid for Sheets**. There is no Google account connection or automatic sheet synchronization.
+**Storage:** Only your personal records are saved in this browser’s local storage. Existing saves and imported backups get their reference titles from the actual cells. Prior names and import labels remain searchable and are included in exports; just opening an old collection does not rewrite it. Photos are processed locally and are not uploaded or saved to the collection. Clearing site data, changing browsers, or leaving a private session can lose the collection. Use **Collection → Export** for a JSON backup, then **Import grids** to restore it or transfer it to another device. Each saved entry also has **Copy grid for Sheets**. There is no Google account connection or automatic sheet synchronization.
+
+### Reference numbers and X positions
+
+The [checked-in reference](./reference/isomer-design/) contains [Isomer Design’s 2,339 numbered 6 × 10 solutions](https://isomerdesign.com/Pentomino/6x10/solutions.txt). All lookups use this bundled snapshot: there is no request to the source site at scan, save or import time. The catalogue is **not** preloaded into anyone’s collection. Numbers come from the explicit source IDs, not the order in which someone solves or imports boards.
+
+The [source index](https://isomerdesign.com/Pentomino/6x10/index.html) groups layouts by the **center of the X**. Reflect the position into the upper-left quarter of a landscape board to compare it with the seven diagrams. In PentoLog’s grid coordinates these are **B3, B4, B5, C2, C3, C4, C5**. This groups symmetric positions without rotating your saved grid. For example, the pack-away lid is **Solution #2182, group B3**.
 
 ### Google Sheets and screenshots
 
