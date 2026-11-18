@@ -251,7 +251,7 @@ export default function App() {
               aria-current={tab === 'workspace' ? 'page' : undefined}
             >
               <ScanLine size={16} />
-              Workspace
+              Gameboard
             </a>
             <a
               href="#collection"
@@ -268,21 +268,19 @@ export default function App() {
         </div>
       </header>
       <main className={`shell main-content ${tab}`} id="main" tabIndex="-1">
-        <div className="hero">
-          <div className="hero-copy">
-            <div className="eyebrow">
-              <span className="eyebrow-line" />
-              {tab === 'collection' ? 'PERSONAL ARCHIVE' : 'PENTOMINO TOOLKIT'}
+        {tab === 'collection' && (
+          <div className="hero">
+            <div className="hero-copy">
+              <div className="eyebrow">
+                <span className="eyebrow-line" />
+                PERSONAL ARCHIVE
+              </div>
+              <h1>Solution collection</h1>
+              <p>Your finds by catalogue number. Explore them by the position of the X piece.</p>
             </div>
-            <h1>{tab === 'collection' ? 'Solution collection' : 'Puzzle workspace'}</h1>
-            <p>
-              {tab === 'collection'
-                ? 'Your finds by catalogue number. Explore them by the position of the X piece.'
-                : 'Play a board or scan a photo. Save your finds by solution number.'}
-            </p>
+            <HeroArt />
           </div>
-          <HeroArt />
-        </div>
+        )}
         {local.error && <Notice error>{local.error}</Notice>}
         {tab === 'workspace' ? (
           <div className="work-panels">

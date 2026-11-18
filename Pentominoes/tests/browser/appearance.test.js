@@ -64,6 +64,7 @@ test('page, favicon, touch, launcher and share art all reproduce the traced P in
   const url = (ref) => new URL(ref, base).href;
   const mark = await page.locator('.brand .brand-mark').getAttribute('src');
   assert.equal(url(await page.locator('.footer-brand .brand-mark').getAttribute('src')), url(mark));
+  await page.getByRole('link', { name: 'Collection', exact: true }).click();
   assert.equal(url(await page.locator('.mark-study image').getAttribute('href')), url(mark));
   assert.equal(
     await page.locator('.footer-brand .brand-mark').evaluate((e) => getComputedStyle(e).filter),
@@ -97,6 +98,8 @@ test('page, favicon, touch, launcher and share art all reproduce the traced P in
 
 test('light OS preference still opens dark workspace, empty editor, collection and import forms', async (t) => {
   const page = await openPhone(t);
+  await page.getByRole('link', { name: 'Gameboard', exact: true }).waitFor();
+  assert.equal(await page.locator('.hero').count(), 0, 'gameboard opens without the hero copy or art');
   await page.emulateMedia({ colorScheme: 'light' });
   await page.reload();
   const button = (name) => page.getByRole('button', { name, exact: true });
