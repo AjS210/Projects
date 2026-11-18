@@ -206,3 +206,35 @@ test('a piece can overlap blocked squares and be moved or turned without losing 
   assert.equal([...gameCells(game)].filter((c) => c === '#').length, 4);
   assert.equal(game.boardId, '8x8-center');
 });
+
+test('frame drafts migrate the old tab draft and retain independent games across sessions', async () => {
+  const { readFrameDrafts, writeFrameDrafts, FRAME_DRAFTS_KEY, DRAFT_KEY } = await import('../src/core/gameDraft.js');
+  const memory = () => {
+    const data = new Map();
+    return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
+  };
+  const local = memory(), tab = memory();
+  let long = placePiece(newGame('3x20'), 'X', [4, 0]);
+  long = placePiece(long, 'I', [3, 1]);
+  const center = turnPiece(placePiece(newGame('8x8-center'), 'L', [2, 2]), 'L', 'rotate');
+  tab.setItem(DRAFT_KEY, JSON.stringify(long));
+  let state = readFrameDrafts(local, tab);
+  assert.equal(state.active, '3x20');
+  assert.deepEqual(state.games['3x20'], long, 'legacy tab draft is migrated');
+  state = { active: '8x8-center', games: { ...state.games, '8x8-center': center } };
+  writeFrameDrafts(state, local, tab);
+  assert.deepEqual(readFrameDrafts(local, memory()), state, 'new tab reads all saved frames');
+  assert.deepEqual(readFrameDrafts(local, tab), state, 'tab reload retains all frames');
+  const reset = { ...state, games: { ...state.games, '8x8-center': newGame('8x8-center') } };
+  writeFrameDrafts(reset, local, tab);
+  assert.deepEqual(readFrameDrafts(local, memory()).games['3x20'], long, 'reset leaves other frames intact');
+  const saved = JSON.parse(local.getItem(FRAME_DRAFTS_KEY));
+  saved.games['8x8-center'].pieces.X = null;
+  local.setItem(FRAME_DRAFTS_KEY, JSON.stringify(saved));
+  const recovered = readFrameDrafts(local, memory());
+  assert.deepEqual(recovered.games['3x20'], long, 'corruption in one frame does not erase others');
+  assert.deepEqual(recovered.games['8x8-center'], newGame('8x8-center'));
+  const blocked = { getItem() { throw Error('blocked'); }, setItem() { throw Error('blocked'); } };
+  assert.doesNotThrow(() => writeFrameDrafts(state, blocked, blocked));
+  assert.equal(readFrameDrafts(blocked, blocked).active, '6x10');
+});
