@@ -1,0 +1,97 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { openPhone } from './site.js';
+
+const panel = (page) => page.getByRole('region', { name: 'Game board', exact: true });
+
+test('native fullscreen keeps gameplay, frame picker, dialogs, and drag preview usable', async (t) => {
+  const page = await openPhone(t);
+  const game = panel(page);
+  await game.getByRole('button', { name: 'X piece, in tray' }).click();
+  const before = await game.locator('[data-square]').evaluateAll((els) => els.map((e) => e.dataset.piece).join(''));
+  await game.getByRole('button', { name: 'Enter fullscreen' }).click();
+  await page.waitForFunction(() => document.fullscreenElement?.classList.contains('game-panel'));
+  assert.ok(await game.getByRole('button', { name: 'Exit fullscreen' }).isVisible());
+  assert.equal(await game.locator('[data-square]').evaluateAll((els) => els.map((e) => e.dataset.piece).join('')), before);
+  await game.getByRole('button', { name: 'Change Frame' }).click();
+  const picker = page.getByRole('dialog', { name: 'Choose a gameboard' });
+  assert.ok(await picker.isVisible());
+  await picker.getByRole('button', { name: '8×8 · Center' }).click();
+  assert.equal(await game.locator('[data-square]').count(), 64);
+  await game.getByRole('button', { name: 'L piece, in tray' }).click();
+  await game.getByRole('button', { name: 'Start over' }).click();
+  const reset = page.getByRole('dialog', { name: 'Start a new game?' });
+  assert.ok(await reset.isVisible());
+  await reset.getByRole('button', { name: 'Keep playing' }).click();
+  const tile = game.getByRole('button', { name: 'I piece, in tray' });
+  const target = game.locator('[data-square="10"]');
+  await tile.scrollIntoViewIfNeeded();
+  const center = async (el) => { const r = await el.boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+  const a = await center(tile), b = await center(target);
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 5 });
+  const ghost = game.locator('.drag-ghost');
+  assert.ok(await ghost.isVisible(), 'drag preview is inside the fullscreen element');
+  await page.mouse.up();
+  assert.equal(await game.locator('[data-piece="I"]').count(), 5);
+  await game.getByRole('button', { name: 'Exit fullscreen' }).click();
+  await page.waitForFunction(() => !document.fullscreenElement);
+  assert.ok(await game.getByRole('button', { name: 'Enter fullscreen' }).isVisible());
+  assert.equal(await game.locator('[data-piece="I"]').count(), 5);
+  await page.reload();
+  assert.equal(await game.locator('[data-piece="I"]').count(), 5);
+});
+
+test('denied fullscreen falls back to a dismissible game-only view', async (t) => {
+  const page = await openPhone(t);
+  await page.evaluate(() => Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: false }));
+  const game = panel(page);
+  await game.getByRole('button', { name: 'Enter fullscreen' }).click();
+  assert.ok(await game.evaluate((el) => el.classList.contains('game-expanded')));
+  assert.match(await game.locator('[role="status"]').first().innerText(), /system bars may remain visible/i);
+  assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden');
+  await game.getByRole('button', { name: 'Change Frame' }).click();
+  await page.getByRole('dialog', { name: 'Choose a gameboard' }).getByRole('button', { name: 'Cancel' }).click();
+  const tile = game.getByRole('button', { name: 'I piece, in tray' });
+  await tile.scrollIntoViewIfNeeded();
+  const center = async (el) => { const r = await el.boundingBox(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+  const from = await center(tile), to = await center(game.locator('[data-square="15"]'));
+  await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 5 });
+  assert.ok(await game.locator('.drag-ghost').isVisible(), 'drag preview stays above the expanded card');
+  await page.mouse.up();
+  assert.equal(await game.locator('[data-piece="I"]').count(), 5);
+  await page.keyboard.press('Escape');
+  assert.ok(await game.getByRole('button', { name: 'Enter fullscreen' }).isVisible());
+  assert.equal(await page.evaluate(() => document.body.style.overflow), '');
+});
+
+test('saving a completed fullscreen game opens its confirmation and keeps the game visible', async (t) => {
+  const { readFileSync } = await import('node:fs');
+  const { LETTERS } = await import('../../src/core/puzzle.js');
+  const { DRAFT_KEY } = await import('../../src/core/gameDraft.js');
+  const line = readFileSync(new URL('../../reference/isomer-design/3x20.txt', import.meta.url), 'utf8').split('\n')[0];
+  const cells = line.trim().split(/\s+/).slice(1).join('');
+  const pieces = Object.fromEntries(LETTERS.map((letter) => {
+    const points = [...cells].flatMap((c, i) => c === letter ? [[i % 20, Math.floor(i / 20)]] : []);
+    const x = Math.min(...points.map((p) => p[0])), y = Math.min(...points.map((p) => p[1]));
+    return [letter, { points: points.map(([a, b]) => [a - x, b - y]), at: [x, y] }];
+  }));
+  const page = await openPhone(t);
+  await page.evaluate(([key, draft]) => sessionStorage.setItem(key, JSON.stringify(draft)), [DRAFT_KEY, { boardId: '3x20', pieces, stack: LETTERS }]);
+  await page.reload();
+  const game = panel(page);
+  await game.getByRole('button', { name: 'Enter fullscreen' }).click();
+  await page.waitForFunction(() => !!document.fullscreenElement);
+  await game.getByRole('button', { name: 'Save solution' }).click();
+  const save = page.getByRole('dialog', { name: 'Save Solution #1' });
+  assert.ok(await save.isVisible());
+  await save.getByRole('button', { name: 'Save to collection' }).click();
+  await save.waitFor({ state: 'detached' });
+  assert.ok(await game.getByRole('button', { name: 'View entry' }).isVisible());
+  await game.getByRole('button', { name: 'View entry' }).click();
+  const entry = page.getByRole('dialog', { name: 'Solution #1' });
+  assert.ok(await entry.isVisible());
+  await entry.getByRole('button', { name: 'Close dialog' }).click();
+  await page.evaluate(() => document.exitFullscreen());
+  await game.getByRole('button', { name: 'Enter fullscreen' }).waitFor();
+});
