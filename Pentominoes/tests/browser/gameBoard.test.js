@@ -413,7 +413,7 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   const page = await openPhone(t);
   const { game, tile, cell, action } = tools(page);
   const choose = async (name) => {
-    await action('Change board').click();
+    await action('Change Frame').click();
     const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
     await dialog.getByRole('radio', { name, exact: true }).check();
     await dialog.getByRole('button', { name: 'Use board' }).click();
@@ -440,7 +440,7 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   await game.waitFor();
   assert.equal(await game.locator('h2').innerText(), '8×8 · Center');
   assert.equal(await game.locator('[data-piece="#"]').count(), 4);
-  await action('Change board').click();
+  await action('Change Frame').click();
   const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
   assert.match(await dialog.innerText(), /returns all pieces/);
   await dialog.getByRole('radio', { name: '3×20 Frame' }).check();
@@ -449,4 +449,20 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   await tile('X').click();
   await action(turnRight).click();
   assert.equal(await game.locator('.field-piece').count(), 1);
+});
+
+test('frame control appears beneath its name without redundant card labels', async (t) => {
+  const page = await openPhone(t);
+  const { game, upload, action } = tools(page);
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport);
+    const heading = await game.locator('h2').boundingBox();
+    const button = await action('Change Frame').boundingBox();
+    assert.ok(button.y >= heading.y + heading.height - 1, 'button sits below the frame name');
+    assert.equal(await game.getByText(/PLAYING FIELD|01\s*\/\s*PLAY/i).count(), 0);
+    assert.equal(await upload.getByText(/02\s*\/\s*IMPORT/i).count(), 0);
+    assert.equal(await game.getByText('0 / 12 placed').count(), 1);
+    await action('Change Frame').click();
+    await page.getByRole('dialog', { name: 'Choose a gameboard' }).getByRole('button', { name: 'Cancel' }).click();
+  }
 });
