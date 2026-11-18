@@ -1,1 +1,25 @@
-# Emul8or
+# AjS210's Projects
+
+| Project | What it contains |
+| --- | --- |
+| [Pentominoes — PentoLog](./Pentominoes/) | A web app for scanning, importing, and tracking 6 × 10 pentomino solutions. Source, tests, and build instructions are in this folder. |
+| [Emul8or](./Emul8or/) | An Android handheld-emulator project in the planning stage. Its research, roadmap, setup script, and license are in this folder. |
+
+## Open PentoLog
+
+- While the repository is named **Emul8or**: [open PentoLog](https://ajs210.github.io/Emul8or/Pentominoes/).
+- After the repository is renamed **Projects**: [use this bookmark](https://ajs210.github.io/Projects/Pentominoes/).
+
+PentoLog uses the same browser-storage key as before. On the same browser and `ajs210.github.io` origin, moving to a different path does not require re-importing your collection. **Collection → Export** makes a backup.
+
+## Working in the repository
+
+Open the project folder you want and follow its README. For example, to run PentoLog's tests from a fresh clone:
+
+```sh
+cd Pentominoes
+npm ci
+npm test
+```
+
+The top-level [`docs/`](./docs/) is the **GitHub Pages publishing folder**, not a third project. PentoLog's Pages build only replaces `docs/Pentominoes/`. The site root forwards old root-style bookmarks to the app within the current site, including links to `#collection`. A repository rename changes the site URL itself.

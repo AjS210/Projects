@@ -1,0 +1,33 @@
+{
+  "name": "pentolog",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "build:pages": "vite build --outDir ../docs/Pentominoes --emptyOutDir",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js",
+    "prepreview": "vite build",
+    "test:browser": "npm run build && node --test tests/browser/*.test.js"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "fflate": "^0.8.3",
+    "lucide-react": "^1.74.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.3.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "jpeg-js": "^0.4.4",
+    "playwright-core": "^1.65.1",
+    "vite": "^8.3.8"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
