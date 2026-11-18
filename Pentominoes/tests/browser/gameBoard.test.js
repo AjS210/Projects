@@ -408,3 +408,45 @@ test('rotating a phone puts the 3 × 4 tray beside a larger field and the upload
     'regular desktop layout unchanged',
   );
 });
+
+test('board picker updates dimensions, blocked squares and the persisted draft', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, cell, action } = tools(page);
+  const choose = async (name) => {
+    await action('Change board').click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
+    await dialog.getByRole('radio', { name, exact: true }).check();
+    await dialog.getByRole('button', { name: 'Use board' }).click();
+  };
+  for (const [name, count, blocked] of [
+    ['3×20 Frame', 60, []], ['4×15 Frame', 60, []], ['5×12 Frame', 60, []],
+    ['8×8 · Center', 64, [27, 28, 35, 36]],
+    ['8×8 · Inner corners', 64, [18, 21, 42, 45]],
+    ['8×8 · Outer corners', 64, [9, 14, 49, 54]],
+    ['8×8 · Four corners', 64, [0, 7, 56, 63]],
+    ['8×8 · Diagonal', 64, [18, 27, 36, 45]],
+    ['6×10 Frame', 60, []],
+  ]) {
+    await choose(name);
+    assert.equal(await game.locator('h2').innerText(), name);
+    assert.equal(await game.locator('[data-square]').count(), count);
+    assert.deepEqual(await game.locator('[data-piece="#"]').evaluateAll((els) => els.map((el) => Number(el.dataset.square))), blocked);
+  }
+  await choose('8×8 · Center');
+  await tile('X').click();
+  await action(turnRight).click();
+  await cell(0).click();
+  await page.reload();
+  await game.waitFor();
+  assert.equal(await game.locator('h2').innerText(), '8×8 · Center');
+  assert.equal(await game.locator('[data-piece="#"]').count(), 4);
+  await action('Change board').click();
+  const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
+  assert.match(await dialog.innerText(), /returns all pieces/);
+  await dialog.getByRole('radio', { name: '3×20 Frame' }).check();
+  await dialog.getByRole('button', { name: 'Use board' }).click();
+  assert.equal(await game.locator('.field-piece').count(), 0);
+  await tile('X').click();
+  await action(turnRight).click();
+  assert.equal(await game.locator('.field-piece').count(), 1);
+});

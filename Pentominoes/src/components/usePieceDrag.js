@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { COLS, ROWS } from '../core/puzzle.js';
+import { getBoard } from '../core/boards.js';
 import { boardOrigin } from '../core/game.js';
 
 const inside = (r, x, y) => x >= r.left && x < r.right && y >= r.top && y < r.bottom;
@@ -24,13 +24,14 @@ export function usePieceDrag({ game, plane, tray, select, drop, report }) {
     };
   }
   function target(e, d) {
+    const { width, height } = getBoard(game.boardId);
     const r = plane.current.getBoundingClientRect(),
-      unit = r.width / COLS;
+      unit = r.width / width;
     const onBoard = inside(r, e.clientX, e.clientY);
     const at = boardOrigin(game.pieces[d.letter].points, [
       Math.floor((e.clientX - r.left) / unit) - d.grip[0],
-      Math.floor(((e.clientY - r.top) * ROWS) / r.height) - d.grip[1],
-    ]);
+      Math.floor(((e.clientY - r.top) * height) / r.height) - d.grip[1],
+    ], game.boardId);
     return {
       letter: d.letter,
       at,

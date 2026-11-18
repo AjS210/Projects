@@ -182,3 +182,27 @@ test('tab drafts round-trip overlapping layers, accept old placements and reject
   assert.doesNotThrow(() => writeGameDraft(game, blocked));
   assert.deepEqual(readGameDraft(blocked), newGame());
 });
+
+test('all board layouts have 60 playable squares and drafts retain their chosen frame', async () => {
+  const { BOARDS } = await import('../src/core/boards.js');
+  for (const board of BOARDS) {
+    const game = newGame(board.id);
+    assert.equal(board.width * board.height - board.blocked.length, 60, board.name);
+    assert.equal(gameCells(game).length, board.width * board.height);
+    assert.equal([...gameCells(game)].filter((c) => c === '#').length, board.blocked.length);
+    const played = turnPiece(pickPiece(game, 'X'), 'X', 'rotate');
+    const store = { value: null, setItem(_k, value) { this.value = value; }, getItem() { return this.value; } };
+    writeGameDraft(played, store);
+    assert.deepEqual(readGameDraft(store), played, board.name);
+    assert.equal(gameCells(played).length, board.width * board.height, 'oversized pieces do not extend the cell array');
+  }
+});
+
+test('a piece can overlap blocked squares and be moved or turned without losing the layout', () => {
+  let game = placePiece(newGame('8x8-center'), 'X', [2, 2]);
+  assert.equal(gameCells(game)[3 * 8 + 3], 'X');
+  game = turnPiece(game, 'X', 'rotate');
+  game = placePiece(game, 'X', null);
+  assert.equal([...gameCells(game)].filter((c) => c === '#').length, 4);
+  assert.equal(game.boardId, '8x8-center');
+});

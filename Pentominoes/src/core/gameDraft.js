@@ -1,5 +1,6 @@
 import { COLS, LETTERS, identify } from './puzzle.js';
 import { boardOrigin, newGame } from './game.js';
+import { BOARDS } from './boards.js';
 
 // A phone may reload a backgrounded tab. This draft belongs to that tab, not
 // localStorage/the collection, and it is never exported as a discovery.
@@ -10,7 +11,8 @@ export function readGameDraft(storage) {
   try {
     const draft = JSON.parse((storage ?? sessionStorage).getItem(DRAFT_KEY));
     if (!draft) return newGame();
-    const game = newGame();
+    if (draft.boardId !== undefined && !BOARDS.some((b) => b.id === draft.boardId)) return newGame();
+    const game = newGame(draft.boardId);
     // Older drafts only had the letter map; their pieces never overlapped.
     const pieces = draft.pieces ?? draft;
     for (const l of LETTERS) {
@@ -22,7 +24,7 @@ export function readGameDraft(storage) {
         !points.some(([x]) => x === 0) ||
         !points.some(([, y]) => y === 0) ||
         identify(points.map(([x, y]) => y * COLS + x)) !== l ||
-        (at !== null && (!pair(at) || !boardOrigin(points, at).every((n, i) => n === at[i])))
+        (at !== null && (!pair(at) || !boardOrigin(points, at, game.boardId).every((n, i) => n === at[i])))
       )
         return newGame();
       if (at) {

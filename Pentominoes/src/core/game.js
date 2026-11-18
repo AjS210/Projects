@@ -1,18 +1,25 @@
-import { BLANK, COLS, LETTERS, ROWS, pointsFor } from './puzzle.js';
+import { LETTERS, pointsFor } from './puzzle.js';
+import { DEFAULT_BOARD, getBoard } from './boards.js';
 
 // The stack lists board pieces from back to front. Squares underneath another
 // piece still belong to it; the flattened view is for drawing/hit testing only.
-export function newGame() {
+export function newGame(boardId = DEFAULT_BOARD) {
   return {
+    boardId: getBoard(boardId).id,
     pieces: Object.fromEntries(LETTERS.map((l) => [l, { points: pointsFor(l), at: null }])),
     stack: [],
   };
 }
-export function gameCells({ pieces, stack }) {
-  const cells = [...BLANK];
+export function gameCells({ pieces, stack, boardId }) {
+  const { width, height, blocked } = getBoard(boardId);
+  const cells = Array(width * height).fill('.');
+  for (const [x, y] of blocked) cells[y * width + x] = '#';
   for (const l of stack) {
     const { at, points } = pieces[l];
-    for (const [x, y] of points) cells[(at[1] + y) * COLS + at[0] + x] = l;
+    for (const [x, y] of points) {
+      const px = at[0] + x, py = at[1] + y;
+      if (px >= 0 && px < width && py >= 0 && py < height) cells[py * width + px] = l;
+    }
   }
   return cells.join('');
 }
@@ -44,9 +51,10 @@ export function sizeOf(points) {
 }
 // Turning at the rim slides the whole piece just far enough to stay in reach.
 // The same projection drives the drag ghost, release and tap placement.
-export function boardOrigin(points, [x, y]) {
+export function boardOrigin(points, [x, y], boardId) {
+  const { width, height } = getBoard(boardId);
   const [w, h] = sizeOf(points);
-  return [Math.max(0, Math.min(COLS - w, x)), Math.max(0, Math.min(ROWS - h, y))];
+  return [Math.max(0, Math.min(width - w, x)), Math.max(0, Math.min(height - h, y))];
 }
 export function bringForward(game, letter) {
   if (!game.pieces[letter].at || game.stack.at(-1) === letter) return game;
@@ -55,19 +63,20 @@ export function bringForward(game, letter) {
 function updatePiece(game, letter, piece) {
   const stack = game.stack.filter((l) => l !== letter);
   if (piece.at) stack.push(letter);
-  return { pieces: { ...game.pieces, [letter]: piece }, stack };
+  return { ...game, pieces: { ...game.pieces, [letter]: piece }, stack };
 }
 export function placePiece(game, letter, at) {
   if (at === null) return updatePiece(game, letter, { points: pointsFor(letter), at: null });
   if (!Array.isArray(at) || at.length !== 2 || !at.every(Number.isInteger)) return game;
   const { points } = game.pieces[letter];
-  return updatePiece(game, letter, { points, at: boardOrigin(points, at) });
+  return updatePiece(game, letter, { points, at: boardOrigin(points, at, game.boardId) });
 }
 export function pickPiece(game, letter) {
   const { at, points } = game.pieces[letter];
   if (at) return bringForward(game, letter);
   const [w, h] = sizeOf(points);
-  return placePiece(game, letter, [Math.floor((COLS - w) / 2), Math.floor((ROWS - h) / 2)]);
+  const { width, height } = getBoard(game.boardId);
+  return placePiece(game, letter, [Math.floor((width - w) / 2), Math.floor((height - h) / 2)]);
 }
 export function turnPiece(game, letter, turn) {
   const { points, at } = game.pieces[letter];
@@ -77,6 +86,6 @@ export function turnPiece(game, letter, turn) {
     [nx, ny] = handleSquare(next);
   return updatePiece(game, letter, {
     points: next,
-    at: boardOrigin(next, [at[0] + gx - nx, at[1] + gy - ny]),
+    at: boardOrigin(next, [at[0] + gx - nx, at[1] + gy - ny], game.boardId),
   });
 }
