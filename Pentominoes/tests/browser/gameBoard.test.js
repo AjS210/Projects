@@ -415,8 +415,8 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   const choose = async (name) => {
     await action('Change Frame').click();
     const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
-    await dialog.getByRole('radio', { name, exact: true }).check();
-    await dialog.getByRole('button', { name: 'Use board' }).click();
+    await dialog.getByRole('button', { name, exact: true }).click();
+    await dialog.waitFor({ state: 'detached' });
   };
   for (const [name, count, blocked] of [
     ['3×20 Frame', 60, []], ['4×15 Frame', 60, []], ['5×12 Frame', 60, []],
@@ -443,8 +443,8 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   await action('Change Frame').click();
   const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
   assert.match(await dialog.innerText(), /returns all pieces/);
-  await dialog.getByRole('radio', { name: '3×20 Frame' }).check();
-  await dialog.getByRole('button', { name: 'Use board' }).click();
+  await dialog.getByRole('button', { name: '3×20 Frame' }).click();
+  await dialog.waitFor({ state: 'detached' });
   assert.equal(await game.locator('.field-piece').count(), 0);
   await tile('X').click();
   await action(turnRight).click();
@@ -468,4 +468,25 @@ test('frame control appears beneath its name without redundant card labels', asy
     await action('Change Frame').click();
     await page.getByRole('dialog', { name: 'Choose a gameboard' }).getByRole('button', { name: 'Cancel' }).click();
   }
+});
+
+test('selecting the current frame or pressing Escape closes the picker without resetting the game', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, action } = tools(page);
+  await tile('X').click();
+  await action('Change Frame').click();
+  let dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
+  assert.match(await dialog.innerText(), /immediately returns all pieces/);
+  assert.equal(await dialog.getByRole('button', { name: 'Use board' }).count(), 0);
+  const current = dialog.getByRole('button', { name: '6×10 Frame', exact: true });
+  assert.equal(await current.getAttribute('aria-pressed'), 'true');
+  await current.focus();
+  await page.keyboard.press('Enter');
+  await dialog.waitFor({ state: 'detached' });
+  assert.equal(await game.locator('.field-piece').count(), 1);
+  await action('Change Frame').click();
+  dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'detached' });
+  assert.equal(await game.locator('.field-piece').count(), 1);
 });

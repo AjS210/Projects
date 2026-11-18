@@ -399,7 +399,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       )}
       {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
       {boardPicker && (
-        <FramePicker current={board.id} description={placed.length ? 'Changing boards returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares.'}
+        <FramePicker current={board.id} description={placed.length ? 'Choosing a different frame immediately returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares.'}
           onClose={() => setBoardPicker(false)} onChoose={(id) => {
             if (id !== board.id) {
               onChange(newGame(id));

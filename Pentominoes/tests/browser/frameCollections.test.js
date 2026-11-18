@@ -35,11 +35,18 @@ test('frame collections save solves, isolate matching numbers, filter groups and
   const change = async (frame) => {
     await collection.getByRole('button', { name: 'Change Frame' }).click();
     const dialog = page.getByRole('dialog', { name: 'Choose a collection frame' });
-    await dialog.getByRole('radio', { name: frame, exact: true }).check();
-    await dialog.getByRole('button', { name: 'Use board' }).click();
+    await dialog.getByRole('button', { name: frame, exact: true }).click();
+    await dialog.waitFor({ state: 'detached' });
   };
   assert.equal(await collection.getByRole('button', { name: 'Open solution: Solution #1' }).count(), 0);
   await change('3×20 Frame');
+  await collection.getByRole('button', { name: 'Change Frame' }).click();
+  const currentDialog = page.getByRole('dialog', { name: 'Choose a collection frame' });
+  const current = currentDialog.getByRole('button', { name: '3×20 Frame', exact: true });
+  assert.equal(await current.getAttribute('aria-pressed'), 'true');
+  await current.focus();
+  await page.keyboard.press('Enter');
+  await currentDialog.waitFor({ state: 'detached' });
   assert.equal(await collection.getByRole('button', { name: 'Open solution: Solution #1' }).count(), 1);
   assert.match(await collection.locator('.x-group-current').innerText(), /1 \/ 2/);
   await collection.locator('.x-groups summary').click();

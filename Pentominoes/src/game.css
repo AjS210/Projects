@@ -425,8 +425,8 @@
 .blocked-square { fill: #747b7d; stroke: var(--line-strong); stroke-width: .2; }
 .board-select { white-space: nowrap; }
 .board-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
-.board-option { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line-strong); border-radius: 6px; cursor: pointer; }
-.board-option:has(input:checked) { border-color: var(--accent); background: var(--accent-well); }
+.board-option { display: grid; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line-strong); border-radius: 6px; cursor: pointer; color: var(--text); background: var(--surface); }
+.board-option[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-well); }
 .board-option svg { grid-column: 1 / -1; width: 100%; height: 62px; }
 .board-option span { font-size: 12px; }
 .board-solved { padding: 12px 20px; color: var(--good); }
