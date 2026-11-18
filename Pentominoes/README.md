@@ -4,7 +4,7 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Photograph a compl
 
 ## Try it
 
-[Open PentoLog](https://ajs210.github.io/Emul8or/Pentominoes/) (see the [project index](../README.md#open-pentolog) for the bookmark after the repository rename). The workspace opens with a labeled sample photo and its matching grid. The sample is **not** added to your collection automatically.
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace opens with the **lid solution**: the pack-away arrangement shown on the product lid, with the red U at the upper left and the white I along the front edge. The [tabletop sample image](./public/assets/lid-solution.jpg) and letter grid show the same arrangement. **Quick guide → Load lid solution** brings it back without adding to or changing your saved collection.
 
 1. **Bring in earlier solves.** Open **Collection → Import grids → File or photo**. Choose an `.xlsx` or `.ods` workbook, a JPG/PNG screenshot, a CSV/TSV file, or a PentoLog JSON backup. Review the number of verified boards, then select **Import solutions**. **Paste or link** also accepts copied ranges or a Sheets link. Side-by-side, stacked and portrait boards are supported; duplicate or mirrored entries are not added again.
 2. **Capture a board.** Choose **Upload a photo**, drop an image onto the photo panel, or use **Use camera**. Include the whole puzzle in even light. On mobile, the camera action requests the device camera; on desktop it asks for a live camera preview. Camera access requires HTTPS or localhost and browser permission. File upload works without camera access.
@@ -39,13 +39,13 @@ npm run build     # static production files in dist/
 npm run preview   # serve the production build
 ```
 
-To run the touch-browser regression for multi-board frame adjustments, install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
+To run the phone-browser tests for the lid solution, saved-board colors and multi-board frame adjustments, install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
 
 No API keys, external fonts, database, or server-side image service are required. The build uses relative asset paths, so it works at the root of an HTTPS static host or under a project path. Hash navigation requires no server rewrite rules.
 
 ### Publish on GitHub Pages
 
-From `Pentominoes/`, run `npm test && npm run build:pages`. This regenerates only `../docs/Pentominoes/`, not the shared publishing directory. Commit that build with the app changes. The existing **Settings → Pages** source is **Deploy from a branch**, branch `arena/f28e0d80-emul8or`, folder **/docs**. Keep the root `docs/.nojekyll` and `docs/index.html`: the latter forwards to `./Pentominoes/` without dropping a bookmark's query or hash. No hard-coded repository name is needed in the deployed app.
+From `Pentominoes/`, run `npm test && npm run build:pages`. This regenerates only `../docs/Pentominoes/`, not the shared publishing directory. Commit that build with the app changes. After merging to `main`, publish via **Settings → Pages → Deploy from a branch → main → /docs**. If Pages still points to the earlier development branch, switch it once; the bookmark stays the same. Keep the root `docs/.nojekyll` and `docs/index.html`: the latter forwards to `./Pentominoes/` without dropping a bookmark's query or hash. No hard-coded repository name is needed in the deployed app.
 
 The hosted app does not receive any saved collections from the preview or offline copy: storage is local to each browser and site. Use **Collection → Export** on the old copy and **Import grids** on the hosted site to transfer a collection.
 
@@ -53,10 +53,10 @@ The hosted app does not receive any saved collections from the preview or offlin
 
 - A Web Worker proposes board quadrilaterals from foreground colors and edge components. It refines candidate boundaries against continuous seams and tests the interior of thick trays.
 - A homography samples the 60 cell interiors in perspective; portrait boards are rotated into landscape. Median color samples and dark seam evidence determine which neighboring cells likely belong together.
-- Connected five-cell groups are identified by their **shape** across rotations and reflections. The on-screen color key is a display convention, not a required physical color palette.
+- Connected five-cell groups are identified by their **shape** across rotations and reflections. The grid, piece reference, editor and collection share the colors sampled from the lid. A photo or workbook can still use a completely different palette.
 - Low-contrast, occluded, blurry, or strongly foreshortened photos can need frame or cell corrections. This is a heuristic reader, not an exact-cover solver that invents missing pieces. The user can review every cell before saving.
 - The lexicographically smallest of the four rectangle-preserving orientations is a board's duplicate key. The four orientations of a portrait image are covered by normalizing its long axis first.
 
 `src/core/` contains the image reader and pure puzzle/collection logic. `src/components/` contains the scanner, alignment tools, grid editor, and archive. Tests read the bundled sample image from its actual pixels and exercise different arrangements, colors, seams, orientations, and incomplete boards.
 
-The sample is an illustrative generated tabletop image of a valid tiling. Font and icon notices are included in `public/licenses/`.
+Font and icon notices are included in `public/licenses/`.

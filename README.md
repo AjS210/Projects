@@ -7,8 +7,7 @@
 
 ## Open PentoLog
 
-- While the repository is named **Emul8or**: [open PentoLog](https://ajs210.github.io/Emul8or/Pentominoes/).
-- After the repository is renamed **Projects**: [use this bookmark](https://ajs210.github.io/Projects/Pentominoes/).
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/) on your phone or computer.
 
 PentoLog uses the same browser-storage key as before. On the same browser and `ajs210.github.io` origin, moving to a different path does not require re-importing your collection. **Collection → Export** makes a backup.
 

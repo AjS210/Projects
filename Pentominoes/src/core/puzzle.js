@@ -3,34 +3,38 @@ export const ROWS = 6;
 export const COLS = 10;
 export const LETTERS = [...'FILNPTUVWXYZ'];
 export const BLANK = '.'.repeat(ROWS * COLS);
+// Display swatches sampled from the product lid. Recognition uses shapes, not this palette.
 export const PIECES = {
-  F: { shape: ['.XX', 'XX.', '.X.'], color: '#9ec6df', ink: '#2a495e' },
-  I: { shape: ['XXXXX'], color: '#c0d1a6', ink: '#435235' },
-  L: { shape: ['X.', 'X.', 'X.', 'XX'], color: '#edb0a2', ink: '#69413a' },
-  N: { shape: ['XX..', '.XXX'], color: '#efd18e', ink: '#614e2e' },
-  P: { shape: ['XX', 'XX', 'X.'], color: '#d1b7dd', ink: '#5b4264' },
-  T: { shape: ['XXX', '.X.', '.X.'], color: '#8fcac1', ink: '#2d544d' },
-  U: { shape: ['X.X', 'XXX'], color: '#b4bfe2', ink: '#404e69' },
-  V: { shape: ['X..', 'X..', 'XXX'], color: '#efa878', ink: '#6c432c' },
-  W: { shape: ['X..', 'XX.', '.XX'], color: '#b5d3ca', ink: '#3d5b53' },
-  X: { shape: ['.X.', 'XXX', '.X.'], color: '#eab0c4', ink: '#693e51' },
-  Y: { shape: ['.X..', 'XXXX'], color: '#b0c9a1', ink: '#3e5537' },
-  Z: { shape: ['XX.', '.X.', '.XX'], color: '#f1c896', ink: '#684d31' },
+  F: { shape: ['.XX', 'XX.', '.X.'], color: '#64a57d', ink: '#122719' },
+  I: { shape: ['XXXXX'], color: '#fefefc', ink: '#474540' },
+  L: { shape: ['X.', 'X.', 'X.', 'XX'], color: '#c7c8ca', ink: '#32343a' },
+  N: { shape: ['XX..', '.XXX'], color: '#8073a2', ink: '#0c0715' },
+  P: { shape: ['XX', 'XX', 'X.'], color: '#606060', ink: '#ffffff' },
+  T: { shape: ['XXX', '.X.', '.X.'], color: '#fde164', ink: '#473609' },
+  U: { shape: ['X.X', 'XXX'], color: '#d06261', ink: '#2c1012' },
+  V: { shape: ['X..', 'X..', 'XXX'], color: '#efdeb2', ink: '#4c4027' },
+  W: { shape: ['X..', 'XX.', '.XX'], color: '#6684cc', ink: '#0d1830' },
+  X: { shape: ['.X.', 'XXX', '.X.'], color: '#fc9860', ink: '#492715' },
+  Y: { shape: ['.X..', 'XXXX'], color: '#8d8e90', ink: '#1a1c23' },
+  Z: { shape: ['XX.', '.X.', '.XX'], color: '#8e7169', ink: '#080504' },
 };
+// Pack-away solution, in the lid's orientation: far edge first, front edge last.
 export const SAMPLE =
-  'LLLLNNXUUI' + 'LFNNNXXXUI' + 'FFYYYYXUUI' + 'VFFTYWWZZI' + 'VTTTWWPPZI' + 'VVVTWPPPZZ';
+  'UUXTTTFFWW' + 'UXXXTFFWWN' + 'UUXLTZFWNN' + 'LLLLYZZZNV' + 'PPPYYYYZNV' + 'PPIIIIIVVV';
 export const SAMPLE_PHOTO = {
-  url: './assets/tabletop-sample.jpg',
-  name: 'Tabletop sample',
+  url: './assets/lid-solution.jpg',
+  name: 'Lid solution',
+  alt: 'Pack-away arrangement from the puzzle lid: red U in the upper left, white I along the front edge, and cream V in the lower right.',
   width: 1264,
   height: 848,
   sample: true,
 };
+// Inner rim of the remade tabletop image, clockwise from its far-left corner.
 export const SAMPLE_FRAME = [
-  [106 / 1264, 217 / 848],
-  [1047 / 1264, 92 / 848],
-  [1180 / 1264, 613 / 848],
-  [198 / 1264, 768 / 848],
+  [103 / 1264, 216 / 848],
+  [1049 / 1264, 88 / 848],
+  [1183 / 1264, 613 / 848],
+  [196 / 1264, 774 / 848],
 ];
 
 export function pointsFor(letter) {

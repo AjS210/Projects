@@ -6,12 +6,17 @@ import {
   BLANK,
   canonicalKey,
   LETTERS,
+  PIECES,
   SAMPLE,
+  SAMPLE_FRAME,
+  SAMPLE_PHOTO,
   validateBoard,
   variants,
 } from '../src/core/puzzle.js';
 import { FULL_FRAME, goodFrame, projector, readFrame, scanImage } from '../src/core/recognition.js';
 
+const sampleFile = new URL(SAMPLE_PHOTO.url, new URL('../public/', import.meta.url));
+const loadSample = () => jpeg.decode(readFileSync(sampleFile));
 const OTHER = 'IVVVTTTPPPIVUUUTWWPPIVUZUTFWWLIZZZFFFXWLIZYNNFXXXLYYYYNNNXLL';
 // A different layout, arbitrary colors, subtle lighting variation, and physical seams.
 function renderBoard(cells, monochrome = false) {
@@ -60,12 +65,31 @@ test('projective mapping respects all four perspective corners; crossing them is
   assert.equal(goodFrame([frame[0], frame[2], frame[1], frame[3]]), false);
 });
 test('automatically finds and reads the bundled perspective photograph from its pixels', () => {
-  const image = jpeg.decode(
-    readFileSync(new URL('../public/assets/tabletop-sample.jpg', import.meta.url)),
-  );
+  const image = loadSample();
   const result = scanImage(image);
   assert.equal(result.found, 12);
   assert.equal(result.cells, SAMPLE);
+});
+test('the sample frame and display swatches match the pack-away solution on the lid', () => {
+  const image = loadSample();
+  assert.deepEqual([image.width, image.height], [SAMPLE_PHOTO.width, SAMPLE_PHOTO.height]);
+  const rows = ['UUXTTTFFWW', 'UXXXTFFWWN', 'UUXLTZFWNN', 'LLLLYZZZNV', 'PPPYYYYZNV', 'PPIIIIIVVV'];
+  assert.equal(SAMPLE, rows.join('')); // The guide must not be mirrored or turned.
+  assert.equal(readFrame(image, SAMPLE_FRAME).cells, SAMPLE);
+
+  // The reader checks shapes, so a photo with two piece colors swapped could still
+  // pass recognition. Compare each cell face to its UI swatch, allowing for grain and light.
+  const project = projector(SAMPLE_FRAME);
+  for (const [i, letter] of [...SAMPLE].entries()) {
+    const [x, y] = project(((i % 10) + 0.5) / 10, (Math.floor(i / 10) + 0.5) / 6);
+    const pixel =
+      4 * (Math.round(y * (image.height - 1)) * image.width + Math.round(x * (image.width - 1)));
+    const rgb = Buffer.from(PIECES[letter].color.slice(1), 'hex');
+    assert.ok(
+      rgb.every((v, c) => Math.abs(v - image.data[pixel + c]) <= 20),
+      `Cell ${i}: ${letter}`,
+    );
+  }
 });
 test('a different board, color palette and mirror produce the actual new grid, not the demo', () => {
   for (const expected of [OTHER, variants(OTHER)[1]]) {
@@ -94,9 +118,7 @@ test('blank photos and obscured pieces never get a fabricated completion', () =>
 });
 
 test('recovers a recompressed photograph after resizing and turning the camera', () => {
-  const src = jpeg.decode(
-    readFileSync(new URL('../public/assets/tabletop-sample.jpg', import.meta.url)),
-  );
+  const src = loadSample();
   const width = 740,
     height = Math.round((src.height / src.width) * width),
     data = new Uint8ClampedArray(width * height * 4);
