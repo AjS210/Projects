@@ -366,7 +366,6 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                   }
                   onClick={(e) => choose(l, e.detail === 0)}
                 >
-                  <span className="tray-name">{l}</span>
                   {at && <Check size={12} className="tray-check" />}
                   <svg aria-hidden="true" viewBox="0 0 44 44">
                     <g transform={`translate(${(44 - w * UNIT) / 2} ${(44 - h * UNIT) / 2})`}>
