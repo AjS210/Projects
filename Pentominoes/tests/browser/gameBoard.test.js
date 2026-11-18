@@ -490,3 +490,44 @@ test('selecting the current frame or pressing Escape closes the picker without r
   await dialog.waitFor({ state: 'detached' });
   assert.equal(await game.locator('.field-piece').count(), 1);
 });
+
+test('3×20 frame fits portrait width and uses a single tray row below it in landscape', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, cell, action, read } = tools(page);
+  await action('Change Frame').click();
+  await page.getByRole('dialog', { name: 'Choose a gameboard' }).getByRole('button', { name: '3×20 Frame' }).click();
+  for (const [width, height] of [[320, 700], [390, 844], [480, 320], [568, 320], [844, 390], [1024, 510], [1360, 850]]) {
+    await page.setViewportSize({ width, height });
+    const plane = game.locator('.game-plane');
+    const frame = game.locator('.game-frame-scroll');
+    const boardBox = await plane.boundingBox();
+    const frameBox = await frame.boundingBox();
+    assert.ok(boardBox.x >= 0 && boardBox.x + boardBox.width <= width + 1, `${width}: entire board is visible`);
+    assert.ok(Math.abs(boardBox.width / 20 - boardBox.height / 3) < 0.1, 'cells remain square');
+    assert.equal(await frame.evaluate((el) => el.scrollWidth <= el.clientWidth), true, `${width}: frame does not scroll`);
+    assert.ok(frameBox.width <= width);
+    if (width > height) {
+      const tiles = await game.locator('.tray-piece').evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()));
+      assert.equal(new Set(tiles.map((b) => b.y)).size, 1, `${width}: one tray row`);
+      assert.equal(new Set(tiles.map((b) => b.x)).size, 12, `${width}: twelve tray columns`);
+      assert.ok(tiles[0].y >= boardBox.y + boardBox.height, `${width}: tray is below board`);
+      assert.ok(tiles.at(-1).right <= width, `${width}: tray fits viewport`);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await tile('X').click();
+  await cell(10).click();
+  assert.equal([...await read()].filter((c) => c === 'X').length, 5, 'tap placement works on the scaled board');
+  await page.setViewportSize({ width: 844, height: 390 });
+  const before = await read();
+  await action(turnRight).click();
+  assert.equal([...await read()].filter((c) => c === 'X').length, 5);
+  assert.equal(before, await read(), 'symmetric X retains its placement through rotation');
+  await tile('I').scrollIntoViewIfNeeded();
+  const from = await center(tile('I')), to = await center(cell(35));
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 5 });
+  await page.mouse.up();
+  assert.deepEqual([...await read()].flatMap((v, i) => v === 'I' ? [i] : []), [33, 34, 35, 36, 37], 'drag maps to the scaled 3×20 cells');
+});

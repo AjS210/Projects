@@ -202,7 +202,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         ? `${selected} on top. Drag or turn the piece on the board.`
         : 'Drag a piece onto the board, or tap its card to add it in the middle.');
   return (
-    <section className="panel game-panel" aria-label="Game board" style={{ '--board-cols': COLS, '--board-rows': ROWS }} {...events}>
+    <section className="panel game-panel" data-board={board.id} aria-label="Game board" style={{ '--board-cols': COLS, '--board-rows': ROWS }} {...events}>
       <div className="panel-heading">
         <div className="section-title">
           <span className="heading-icon">
@@ -217,7 +217,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       </div>
       <div className="game-content">
         <div className="game-field">
-          <div className="game-frame-scroll"><div className="game-frame" style={{ minWidth: COLS > 12 ? COLS * 20 + 30 : undefined }}>
+          <div className="game-frame-scroll"><div className="game-frame" style={{ minWidth: COLS > 12 && board.id !== '3x20' ? COLS * 20 + 30 : undefined }}>
             <span className="ruler-cross" aria-hidden="true">
               +
             </span>

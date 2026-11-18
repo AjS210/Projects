@@ -430,3 +430,22 @@
 .board-option svg { grid-column: 1 / -1; width: 100%; height: 62px; }
 .board-option span { font-size: 12px; }
 .board-solved { padding: 12px 20px; color: var(--good); }
+
+/* The 3×20 field is intentionally scaled to the available width. Its
+   twelve-piece tray spans one row below the field in landscape. */
+@media (orientation: landscape) {
+  .game-panel[data-board='3x20'] {
+    display: block;
+  }
+  .game-panel[data-board='3x20'] .game-content {
+    display: block;
+    padding: 0 8px 10px;
+  }
+  .game-panel[data-board='3x20'] .game-tray {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .game-panel[data-board='3x20'] .tray-piece {
+    height: clamp(38px, 7vw, 53px);
+  }
+}
