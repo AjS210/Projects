@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import '../game.css';
 import {
@@ -7,6 +7,8 @@ import {
   FlipVertical2,
   Gamepad2,
   Hand,
+  Maximize2,
+  Minimize2,
   RotateCcw,
   RotateCw,
   Undo2,
@@ -87,7 +89,7 @@ function MarkedPiece({ letter, points, mini = false }) {
   );
 }
 
-function DragGhost({ points, preview }) {
+function DragGhost({ points, preview, container }) {
   const [w, h] = sizeOf(points);
   return createPortal(
     <div className="game-drag-layer" aria-hidden="true">
@@ -104,19 +106,55 @@ function DragGhost({ points, preview }) {
         <MarkedPiece letter={preview.letter} points={points} />
       </svg>
     </div>,
-    document.body,
+    container ?? document.body,
   );
 }
 
 export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, onView }) {
   const plane = useRef(null),
-    tray = useRef(null);
+    tray = useRef(null),
+    panel = useRef(null);
   const [selected, setSelected] = useState(null),
     [aim, setAim] = useState(false),
     [focus, setFocus] = useState(0),
     [message, report] = useState(''),
     [reset, setReset] = useState(false),
-    [boardPicker, setBoardPicker] = useState(false);
+    [boardPicker, setBoardPicker] = useState(false),
+    [fullscreen, setFullscreen] = useState(false),
+    [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const sync = () => setFullscreen(document.fullscreenElement === panel.current);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+  useEffect(() => {
+    if (!expanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const escape = (event) => {
+      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) { setExpanded(false); report(''); }
+    };
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('keydown', escape);
+      document.body.style.overflow = previous;
+    };
+  }, [expanded]);
+  async function toggleFullscreen() {
+    if (expanded) { setExpanded(false); report(''); return; }
+    if (document.fullscreenElement === panel.current) {
+      try { await document.exitFullscreen(); }
+      catch { report('Could not exit fullscreen. Use your device’s back or fullscreen control.'); }
+      return;
+    }
+    try {
+      if (!panel.current?.requestFullscreen || !document.fullscreenEnabled) throw new Error('Fullscreen unavailable');
+      await panel.current.requestFullscreen();
+    } catch {
+      setExpanded(true);
+      report('Fullscreen is unavailable here. Expanded view is open; system bars may remain visible.');
+    }
+  }
   const board = getBoard(game.boardId);
   const COLS = board.width, ROWS = board.height;
   const { pieces, stack: placed } = game;
@@ -202,13 +240,19 @@ export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, o
         ? `${selected} on top. Drag or turn the piece on the board.`
         : 'Drag a piece onto the board, or tap its card to add it in the middle.');
   return (
-    <section className="panel game-panel" data-board={board.id} aria-label="Game board" style={{ '--board-cols': COLS, '--board-rows': ROWS }} {...events}>
+    <section ref={panel} className={`panel game-panel ${fullscreen ? 'game-fullscreen' : ''} ${expanded ? 'game-expanded' : ''}`} data-board={board.id} aria-label="Game board" style={{ '--board-cols': COLS, '--board-rows': ROWS }} {...events}>
       <div className="panel-heading">
+        <div className="game-heading-row">
         <div className="section-title">
           <span className="heading-icon">
             <Gamepad2 size={18} />
           </span>
           <h2 id="game-title">{board.name}</h2>
+        </div>
+        <button className="btn btn-light game-fullscreen-toggle" type="button" onClick={toggleFullscreen} aria-label={fullscreen || expanded ? 'Exit fullscreen' : 'Enter fullscreen'}>
+          {fullscreen || expanded ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+          <span>{fullscreen || expanded ? 'Exit fullscreen' : 'Fullscreen'}</span>
+        </button>
         </div>
         <div className="game-meta">
           <button className="btn btn-light board-select" type="button" onClick={() => setBoardPicker(true)}>Change Frame</button>
@@ -397,7 +441,7 @@ export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, o
       {complete && (
         <SolutionResult cells={cells} boardId={board.id} collection={collection} onSave={onSave} onView={onView} />
       )}
-      {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
+      {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} container={fullscreen || expanded ? panel.current : null} />}
       {boardPicker && (
         <FramePicker current={board.id} description="Each frame keeps its most recent game. Choose a frame to resume it."
           onClose={() => setBoardPicker(false)} onChoose={(id) => {
