@@ -4,9 +4,11 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Play with all twel
 
 ## Try it
 
-[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos and piece swatches keep their original colors. **Game board** opens with a tray of twelve pieces and an empty playing field (or your current game in this tab). **Solution grid** is a separate photo scanner. Its [lid sample](./public/assets/lid-solution.jpg) shows the pack-away arrangement, with the red U at the upper left and the white I along the front edge. **Quick guide → Load lid solution** brings that reference back without changing the game or collection.
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos and piece swatches keep their original colors. **Game board** opens with a tray of twelve pieces and an empty playing field (or your current game in this tab). **Solution grid** is a separate photo scanner. It opens on the pack-away letter grid (**Solution #2182, X group B3**), with no source photo. **Quick guide → Load lid solution** restores those cells and clears any photo/frame without changing the game or collection.
 
 ### Play a board
+
+On a phone in portrait, the piece tray is below the playing field. Rotate to landscape and **Game board** spans the workspace: the field is on the left, and all twelve piece choices and the flip/rotate controls are on the right. **Solution grid** is below the game. Turning the phone does not reset the pieces or the current selection.
 
 - Drag a piece with a finger, pen or mouse. Its preview snaps to the 6 × 10 grid. A dashed red preview means it crosses the frame or another piece; releasing there leaves the board unchanged. Grab any occupied square to move its **whole** piece.
 - Select a piece in the tray or on the board. **Flip horizontal** swaps left and right, **Flip vertical** swaps top and bottom, and **Rotate 90°** turns it clockwise. A placed piece turns at the top-left of its bounding box if there is room. **Return to tray** (or dropping back onto the tray) lets you turn it in free space.
@@ -18,7 +20,7 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Play with all twel
 
 1. **Bring in earlier solves.** Open **Collection → Import grids → File or photo**. Choose an `.xlsx` or `.ods` workbook, a JPG/PNG screenshot, a CSV/TSV file, or a PentoLog JSON backup. Review the number of verified boards, then select **Import solutions**. **Paste or link** also accepts copied ranges or a Sheets link. Side-by-side, stacked and portrait boards are supported; duplicate or mirrored entries are not added again.
 2. **Capture a board.** In **Solution grid**, choose **Upload a photo or screenshot**, drop the file onto that card, or choose **Use camera**. Include the whole puzzle in even light. On mobile, the camera action requests the device camera; on desktop it asks for a live camera preview. Camera access requires HTTPS or localhost and browser permission. File upload works without camera access.
-3. **Review the reading.** The scanner fills a colored letter grid. **View photo** opens its source image; expanding **Piece reference** lets you highlight individual shapes.
+3. **Review the reading.** The scanner fills a colored letter grid. **View photo** and **Adjust frame** are available once you supply an image. Expanding **Piece reference** lets you highlight individual shapes.
    - In **Adjust frame**, drag **inside** the frame to move it without resizing. On a multi-board photo, use **Jump to board** or tap another outlined grid.
    - Drag a **corner** to resize. Both handles on a side move together; the opposite corner stays fixed. Arrow keys fine-tune the focused frame or corner (hold Shift for larger steps). **Straighten edges** is available for tilted frames.
    - **Read grid** scans the highlighted region and keeps the other detected boards available. **Reset frame** undoes adjustments to the chosen frame. Closing without reading discards the draft.
@@ -56,7 +58,7 @@ npm run build     # static production files in dist/
 npm run preview   # serve the production build
 ```
 
-To run the browser tests (touch/mouse placements, a full numbered playthrough, gallery, theme, lid colors and multi-board photos), install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
+To run the browser tests (portrait/landscape touch placement, a full numbered playthrough, gallery, theme, the photo-free lid grid and multi-board photos), install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
 
 No API keys, external fonts, database, or server-side image service are required. The build uses relative asset paths, so it works at the root of an HTTPS static host or under a project path. Hash navigation requires no server rewrite rules.
 
@@ -80,6 +82,6 @@ The hosted app does not receive any saved collections from the preview or offlin
 - Low-contrast, occluded, blurry, or strongly foreshortened photos can need frame or cell corrections. This is a heuristic reader, not an exact-cover solver that invents missing pieces. The user can review every cell before saving.
 - The lexicographically smallest of the four rectangle-preserving orientations is a board's duplicate key. The four orientations of a portrait image are covered by normalizing its long axis first.
 
-`src/core/` contains the image reader and pure puzzle/collection logic. `src/components/` contains the playable board, scanner, alignment tools, grid editor, and archive. Tests read the bundled sample image from its actual pixels and exercise different arrangements, colors, seams, orientations, and incomplete boards.
+`src/core/` contains the image reader and pure puzzle/collection logic. `src/components/` contains the playable board, scanner, alignment tools, grid editor, and archive. A perspective photograph is kept only as a recognition test fixture, not in the app or its Pages build. The scanner tests exercise actual pixels, different arrangements, colors, seams, orientations, and incomplete boards.
 
 Font and icon notices are included in `public/licenses/`.

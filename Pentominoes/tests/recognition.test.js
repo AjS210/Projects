@@ -8,14 +8,21 @@ import {
   LETTERS,
   PIECES,
   SAMPLE,
-  SAMPLE_FRAME,
-  SAMPLE_PHOTO,
   validateBoard,
   variants,
 } from '../src/core/puzzle.js';
 import { FULL_FRAME, goodFrame, projector, readFrame, scanImage } from '../src/core/recognition.js';
 
-const sampleFile = new URL(SAMPLE_PHOTO.url, new URL('../public/', import.meta.url));
+// Test-only camera input. The app ships the pack-away *cells*, not this JPEG.
+const sampleFile = new URL('./fixtures/angled-board.jpg', import.meta.url);
+const width = 1264,
+  height = 848;
+const sampleFrame = [
+  [103, 216],
+  [1049, 88],
+  [1183, 613],
+  [196, 774],
+].map(([x, y]) => [x / width, y / height]);
 const loadSample = () => jpeg.decode(readFileSync(sampleFile));
 const OTHER = 'IVVVTTTPPPIVUUUTWWPPIVUZUTFWWLIZZZFFFXWLIZYNNFXXXLYYYYNNNXLL';
 // A different layout, arbitrary colors, subtle lighting variation, and physical seams.
@@ -64,7 +71,7 @@ test('projective mapping respects all four perspective corners; crossing them is
   assert.equal(goodFrame(frame), true);
   assert.equal(goodFrame([frame[0], frame[2], frame[1], frame[3]]), false);
 });
-test('automatically finds and reads the bundled perspective photograph from its pixels', () => {
+test('automatically finds and reads a perspective photograph from its pixels', () => {
   const image = loadSample();
   const result = scanImage(image);
   assert.equal(result.found, 12);
@@ -72,14 +79,14 @@ test('automatically finds and reads the bundled perspective photograph from its 
 });
 test('the sample frame and display swatches match the pack-away solution on the lid', () => {
   const image = loadSample();
-  assert.deepEqual([image.width, image.height], [SAMPLE_PHOTO.width, SAMPLE_PHOTO.height]);
+  assert.deepEqual([image.width, image.height], [width, height]);
   const rows = ['UUXTTTFFWW', 'UXXXTFFWWN', 'UUXLTZFWNN', 'LLLLYZZZNV', 'PPPYYYYZNV', 'PPIIIIIVVV'];
   assert.equal(SAMPLE, rows.join('')); // The guide must not be mirrored or turned.
-  assert.equal(readFrame(image, SAMPLE_FRAME).cells, SAMPLE);
+  assert.equal(readFrame(image, sampleFrame).cells, SAMPLE);
 
   // The reader checks shapes, so a photo with two piece colors swapped could still
   // pass recognition. Compare each cell face to its UI swatch, allowing for grain and light.
-  const project = projector(SAMPLE_FRAME);
+  const project = projector(sampleFrame);
   for (const [i, letter] of [...SAMPLE].entries()) {
     const [x, y] = project(((i % 10) + 0.5) / 10, (Math.floor(i / 10) + 0.5) / 6);
     const pixel =

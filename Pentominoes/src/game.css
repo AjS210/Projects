@@ -304,3 +304,107 @@
     font-size: 9px;
   }
 }
+
+/* A rotated phone has width to spare, but very little height. Give the game
+   its own row and move the existing controls beside it (no second board/tray,
+   so rotation doesn't interrupt selection, keyboard focus or the draft). */
+@media (orientation: landscape) and (max-height: 600px) and (max-width: 1280px) {
+  .shell.workspace {
+    width: auto;
+    max-width: none;
+    margin-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
+  }
+  .workspace .work-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace .hero {
+    padding-block: 12px;
+  }
+  .workspace .hero-art {
+    height: 52px;
+  }
+  .game-panel > .panel-heading {
+    padding: 8px 14px 6px;
+  }
+  .game-content {
+    display: grid;
+    /* Keep the 10:6 field within the short viewport even with browser chrome.
+       Leave room for the card title, axes, border and padding. */
+    --field-overhead: 110px;
+    --field-limit: max(240px, calc((100svh - var(--field-overhead)) * 10 / 6 + 29px));
+    grid-template-columns: minmax(0, min(60%, var(--field-limit))) minmax(min(188px, 45%), 1fr);
+    grid-template-areas: 'field kit' 'field foot';
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    column-gap: clamp(8px, 1.6vw, 16px);
+    padding: 0 clamp(8px, 1.6vw, 16px) 10px;
+  }
+  .game-field {
+    grid-area: field;
+    min-width: 0;
+  }
+  .game-kit {
+    grid-area: kit;
+    min-width: 0;
+    container: landscape-kit / inline-size;
+  }
+  .game-transforms {
+    margin: 0 0 4px;
+    gap: 4px;
+  }
+  .game-transforms .btn {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+  .game-tray {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .tray-piece {
+    height: clamp(44px, 13svh, 56px);
+  }
+  .tray-piece > svg:not(.tray-check) {
+    width: min(90%, 52px);
+    height: min(100%, 52px);
+  }
+  .game-foot {
+    grid-area: foot;
+    margin-top: 6px;
+    padding-top: 2px;
+    min-height: 44px;
+  }
+  .game-foot p {
+    font-size: 11.5px;
+  }
+  /* Use the space under the field for feedback on smaller landscape phones. */
+  @container (max-width: 684px) {
+    .game-content {
+      --field-overhead: 162px;
+      grid-template-areas: 'field kit' 'foot kit';
+    }
+  }
+}
+/* The rail is a named container only in phone landscape. Trade columns for
+   height as the browser bars come and go, without shrinking the touch targets. */
+@media (max-height: 350px) {
+  @container landscape-kit (min-width: 284px) {
+    .game-tray {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+}
+@container landscape-kit (max-width: 187px) {
+  .game-tray {
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+  }
+  .tray-heading {
+    flex-wrap: wrap;
+    gap: 0 4px;
+  }
+  .game-transforms .btn {
+    overflow-wrap: anywhere;
+  }
+}

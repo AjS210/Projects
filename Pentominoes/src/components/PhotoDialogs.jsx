@@ -230,17 +230,8 @@ export function AlignDialog({ photo, corners, boards, onClose, onRead }) {
 
 export function PhotoDialog({ photo, onClose, onAlign }) {
   return (
-    <Dialog
-      title={photo.sample ? photo.name : 'Your board photo'}
-      eyebrow="PHOTO PREVIEW"
-      wide
-      onClose={onClose}
-    >
-      <img
-        className="expanded-photo"
-        src={photo.url}
-        alt={photo.alt || 'Full view of your pentomino board'}
-      />
+    <Dialog title="Your board photo" eyebrow="PHOTO PREVIEW" wide onClose={onClose}>
+      <img className="expanded-photo" src={photo.url} alt="Full view of your pentomino board" />
       <div className="dialog-actions">
         <span className="file-caption">
           {photo.width} × {photo.height} PX

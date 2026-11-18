@@ -169,152 +169,156 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         </span>
       </div>
       <div className="game-content">
-        <div className="game-meta">
-          <span>
-            6 × 10 <i /> PLAYING FIELD
-          </span>
-          <span className={placed.length === 12 ? 'complete' : ''}>
-            {placed.length} / 12 placed
-          </span>
-        </div>
-        <div className="game-frame">
-          <span className="ruler-cross" aria-hidden="true">
-            +
-          </span>
-          <div className="col-ruler" aria-hidden="true">
-            {Array.from({ length: COLS }, (_, x) => (
-              <span key={x}>{x + 1}</span>
-            ))}
+        <div className="game-field">
+          <div className="game-meta">
+            <span>
+              6 × 10 <i /> PLAYING FIELD
+            </span>
+            <span className={placed.length === 12 ? 'complete' : ''}>
+              {placed.length} / 12 placed
+            </span>
           </div>
-          <div className="row-ruler" aria-hidden="true">
-            {Array.from({ length: ROWS }, (_, y) => (
-              <span key={y}>{rowLabel(y)}</span>
-            ))}
-          </div>
-          <div
-            ref={plane}
-            className="game-plane"
-            role="group"
-            aria-label="Playing field: six rows, ten columns"
-            aria-describedby="play-hint"
-          >
-            <svg
-              aria-hidden="true"
-              className="field-art"
-              viewBox={`0 0 ${COLS * UNIT} ${ROWS * UNIT}`}
-            >
-              <defs>
-                <pattern
-                  id="field-squares"
-                  width={UNIT}
-                  height={UNIT}
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path d="M8 0H0V8" fill="none" stroke="var(--line-strong)" strokeWidth=".28" />
-                  <circle cx="4" cy="4" r=".17" fill="var(--line-strong)" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#field-squares)" />
-              {placed.map((l) => (
-                <g
-                  key={l}
-                  className={`field-piece ${l === selected ? 'selected' : ''}`}
-                  opacity={preview?.letter === l ? 0.3 : 1}
-                  transform={`translate(${game[l].at[0] * UNIT} ${game[l].at[1] * UNIT})`}
-                >
-                  <MarkedPiece letter={l} points={game[l].points} />
-                </g>
+          <div className="game-frame">
+            <span className="ruler-cross" aria-hidden="true">
+              +
+            </span>
+            <div className="col-ruler" aria-hidden="true">
+              {Array.from({ length: COLS }, (_, x) => (
+                <span key={x}>{x + 1}</span>
               ))}
-            </svg>
-            {!placed.length && !selected && (
-              <div className="field-prompt" aria-hidden="true">
-                <span>
-                  <Hand size={16} />
-                  Drag your first piece here
-                </span>
+            </div>
+            <div className="row-ruler" aria-hidden="true">
+              {Array.from({ length: ROWS }, (_, y) => (
+                <span key={y}>{rowLabel(y)}</span>
+              ))}
+            </div>
+            <div
+              ref={plane}
+              className="game-plane"
+              role="group"
+              aria-label="Playing field: six rows, ten columns"
+              aria-describedby="play-hint"
+            >
+              <svg
+                aria-hidden="true"
+                className="field-art"
+                viewBox={`0 0 ${COLS * UNIT} ${ROWS * UNIT}`}
+              >
+                <defs>
+                  <pattern
+                    id="field-squares"
+                    width={UNIT}
+                    height={UNIT}
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path d="M8 0H0V8" fill="none" stroke="var(--line-strong)" strokeWidth=".28" />
+                    <circle cx="4" cy="4" r=".17" fill="var(--line-strong)" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#field-squares)" />
+                {placed.map((l) => (
+                  <g
+                    key={l}
+                    className={`field-piece ${l === selected ? 'selected' : ''}`}
+                    opacity={preview?.letter === l ? 0.3 : 1}
+                    transform={`translate(${game[l].at[0] * UNIT} ${game[l].at[1] * UNIT})`}
+                  >
+                    <MarkedPiece letter={l} points={game[l].points} />
+                  </g>
+                ))}
+              </svg>
+              {!placed.length && !selected && (
+                <div className="field-prompt" aria-hidden="true">
+                  <span>
+                    <Hand size={16} />
+                    Drag your first piece here
+                  </span>
+                </div>
+              )}
+              <div className="field-targets">
+                {Array.from(cells, (l, i) => {
+                  const x = i % COLS,
+                    y = Math.floor(i / COLS);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      data-square={i}
+                      data-piece={l}
+                      aria-label={`${locationName(x, y)}: ${l === '.' ? 'empty' : l + ' piece'}`}
+                      tabIndex={focus === i ? 0 : -1}
+                      onFocus={() => setFocus(i)}
+                      onKeyDown={(e) => boardKey(e, i)}
+                      onPointerDown={
+                        l === '.'
+                          ? undefined
+                          : (e) => start(e, l, [x - game[l].at[0], y - game[l].at[1]])
+                      }
+                      onClick={() => activateCell(i)}
+                    />
+                  );
+                })}
               </div>
-            )}
-            <div className="field-targets">
-              {Array.from(cells, (l, i) => {
-                const x = i % COLS,
-                  y = Math.floor(i / COLS);
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    data-square={i}
-                    data-piece={l}
-                    aria-label={`${locationName(x, y)}: ${l === '.' ? 'empty' : l + ' piece'}`}
-                    tabIndex={focus === i ? 0 : -1}
-                    onFocus={() => setFocus(i)}
-                    onKeyDown={(e) => boardKey(e, i)}
-                    onPointerDown={
-                      l === '.'
-                        ? undefined
-                        : (e) => start(e, l, [x - game[l].at[0], y - game[l].at[1]])
-                    }
-                    onClick={() => activateCell(i)}
-                  />
-                );
-              })}
             </div>
           </div>
         </div>
-        <div className="game-transforms" role="group" aria-label="Turn selected piece">
-          {transforms.map(([action, label, Icon]) => (
-            <button
-              key={action}
-              className="btn btn-light"
-              disabled={!selected || Boolean(preview)}
-              onClick={() => turn(action)}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="tray-heading">
-          <h3>Piece tray</h3>
-          <button
-            className="text-btn"
-            disabled={!game[selected]?.at || Boolean(preview)}
-            onClick={() => drop(selected, null)}
-          >
-            <Undo2 size={14} />
-            Return to tray
-          </button>
-        </div>
-        <div
-          className={`game-tray ${preview?.onTray ? 'over-tray' : ''}`}
-          ref={tray}
-          role="group"
-          aria-label="Pentomino pieces"
-        >
-          {LETTERS.map((l) => {
-            const { points, at } = game[l],
-              [w, h] = sizeOf(points);
-            return (
+        <div className="game-kit">
+          <div className="game-transforms" role="group" aria-label="Turn selected piece">
+            {transforms.map(([action, label, Icon]) => (
               <button
-                key={l}
-                aria-label={`${l} piece, ${at ? 'on board' : 'in tray'}`}
-                aria-pressed={selected === l}
-                className={`tray-piece ${at ? 'on-board' : ''}`}
-                onPointerDown={(e) => start(e, l, handleSquare(points))}
-                onClick={(e) => {
-                  select(l);
-                  if (e.detail === 0) focusCell(focus);
-                }}
+                key={action}
+                className="btn btn-light"
+                disabled={!selected || Boolean(preview)}
+                onClick={() => turn(action)}
               >
-                <span className="tray-name">{l}</span>
-                {at && <Check size={12} className="tray-check" />}
-                <svg aria-hidden="true" viewBox="0 0 44 44">
-                  <g transform={`translate(${(44 - w * UNIT) / 2} ${(44 - h * UNIT) / 2})`}>
-                    <MarkedPiece letter={l} points={points} mini />
-                  </g>
-                </svg>
+                <Icon size={16} />
+                {label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+          <div className="tray-heading">
+            <h3>Piece tray</h3>
+            <button
+              className="text-btn"
+              disabled={!game[selected]?.at || Boolean(preview)}
+              onClick={() => drop(selected, null)}
+            >
+              <Undo2 size={14} />
+              Return to tray
+            </button>
+          </div>
+          <div
+            className={`game-tray ${preview?.onTray ? 'over-tray' : ''}`}
+            ref={tray}
+            role="group"
+            aria-label="Pentomino pieces"
+          >
+            {LETTERS.map((l) => {
+              const { points, at } = game[l],
+                [w, h] = sizeOf(points);
+              return (
+                <button
+                  key={l}
+                  aria-label={`${l} piece, ${at ? 'on board' : 'in tray'}`}
+                  aria-pressed={selected === l}
+                  className={`tray-piece ${at ? 'on-board' : ''}`}
+                  onPointerDown={(e) => start(e, l, handleSquare(points))}
+                  onClick={(e) => {
+                    select(l);
+                    if (e.detail === 0) focusCell(focus);
+                  }}
+                >
+                  <span className="tray-name">{l}</span>
+                  {at && <Check size={12} className="tray-check" />}
+                  <svg aria-hidden="true" viewBox="0 0 44 44">
+                    <g transform={`translate(${(44 - w * UNIT) / 2} ${(44 - h * UNIT) / 2})`}>
+                      <MarkedPiece letter={l} points={points} mini />
+                    </g>
+                  </svg>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="game-foot">
           <p id="play-hint" role="status">
@@ -338,7 +342,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         <Dialog
           title="Start a new game?"
           eyebrow="GAME BOARD"
-          description="Return all twelve pieces to the tray. Your photo grid and saved solutions won’t change."
+          description="Return all twelve pieces to the tray. Your solution grid and saved solutions won’t change."
           onClose={() => setReset(false)}
         >
           <div className="dialog-actions">

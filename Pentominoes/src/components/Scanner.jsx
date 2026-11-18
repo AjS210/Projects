@@ -49,7 +49,7 @@ export function Scanner({
       ? boardIndex < 0
         ? 'Custom frame'
         : `Board ${boardIndex + 1} of ${photoBoards.length}`
-      : photo.name;
+      : photo?.name;
   return (
     <section
       className={`panel grid-panel ${dragging ? 'is-dragging' : ''}`}
@@ -90,10 +90,10 @@ export function Scanner({
         </span>
       </div>
       <div className="grid-content">
-        <div className="scan-source">
-          <svg aria-hidden="true" viewBox={`0 0 ${photo.width} ${photo.height}`}>
-            <image href={photo.url} width={photo.width} height={photo.height} />
-            {!photo.sample && (
+        {photo && (
+          <div className="scan-source">
+            <svg aria-hidden="true" viewBox={`0 0 ${photo.width} ${photo.height}`}>
+              <image href={photo.url} width={photo.width} height={photo.height} />
               <polygon
                 points={corners.map(([x, y]) => `${x * photo.width},${y * photo.height}`).join(' ')}
                 fill="none"
@@ -101,17 +101,17 @@ export function Scanner({
                 strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
-            )}
-          </svg>
-          <span>
-            <small>{photo.sample ? 'SAMPLE PHOTO' : 'SOURCE PHOTO'}</small>
-            <strong>{photoLabel}</strong>
-          </span>
-          <button className="text-btn" disabled={busy} onClick={onExpand}>
-            <Maximize2 size={14} />
-            View photo
-          </button>
-        </div>
+            </svg>
+            <span>
+              <small>SOURCE PHOTO</small>
+              <strong>{photoLabel}</strong>
+            </span>
+            <button className="text-btn" disabled={busy} onClick={onExpand}>
+              <Maximize2 size={14} />
+              View photo
+            </button>
+          </div>
+        )}
         <div className="board-stage">
           <Board cells={cells} highlight={highlight} />
           {busy && (
@@ -198,7 +198,12 @@ export function Scanner({
             <Camera size={15} />
             Use camera
           </button>
-          <button className="btn btn-light" disabled={busy} onClick={onAlign}>
+          <button
+            className="btn btn-light"
+            disabled={busy || !photo}
+            title={photo ? undefined : 'Upload or take a photo to adjust its frame'}
+            onClick={onAlign}
+          >
             <Scan size={15} />
             Adjust frame
           </button>
@@ -208,6 +213,7 @@ export function Scanner({
       <SolutionResult
         cells={cells}
         busy={busy}
+        hasPhoto={Boolean(photo)}
         collection={collection}
         onSave={onSave}
         onView={onView}
