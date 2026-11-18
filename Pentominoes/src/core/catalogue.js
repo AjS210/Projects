@@ -52,3 +52,64 @@ export function indexCatalogue(text) {
       ? (byGrid.get(canonicalKey(cells)) ?? null)
       : null;
 }
+
+// Only symmetries that preserve the frame's holes are equivalent. In
+// particular, the diagonal-hole frame cannot be mirrored independently.
+export function frameTransforms(board) {
+  const { width: w, height: h, blocked } = board;
+  const transforms = [
+    (x, y) => [x, y], (x, y) => [w - 1 - x, y],
+    (x, y) => [x, h - 1 - y], (x, y) => [w - 1 - x, h - 1 - y],
+  ];
+  if (w === h) transforms.push(
+    (x, y) => [y, x], (x, y) => [w - 1 - y, x],
+    (x, y) => [y, h - 1 - x], (x, y) => [w - 1 - y, h - 1 - x],
+  );
+  const holes = blocked.map(([x, y]) => y * w + x).sort((a, b) => a - b).join(',');
+  return transforms.filter((transform) => blocked.map(([x, y]) => {
+    const [a, b] = transform(x, y); return b * w + a;
+  }).sort((a, b) => a - b).join(',') === holes);
+}
+export function frameVariants(cells, board) {
+  if (cells.length !== board.width * board.height) return [];
+  const w = board.width;
+  return frameTransforms(board).map((transform) => {
+    const result = Array(cells.length);
+    [...cells].forEach((value, i) => {
+      const [x, y] = transform(i % w, Math.floor(i / w));
+      result[y * w + x] = value === '#' ? '.' : value;
+    });
+    return result.join('');
+  });
+}
+export const frameKey = (cells, board) => frameVariants(cells, board).sort()[0];
+export function frameXGroup(cells, board) {
+  const i = cells.indexOf('X');
+  const x = i % board.width, y = Math.floor(i / board.width) + 1;
+  const centers = frameTransforms(board).map((transform) => transform(x, y));
+  centers.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  return `${String.fromCharCode(65 + centers[0][1])}${centers[0][0] + 1}`;
+}
+export function indexFrameCatalogue(text, board, expectedSize) {
+  const byGrid = new Map(), numbers = new Set(), groups = {};
+  for (const line of text.trim().split(/\r?\n/)) {
+    const [prefix, ...rows] = line.trim().split(/\s+/);
+    if (!/^\d+,$/.test(prefix) || rows.length !== board.height ||
+        rows.some((r) => r.length !== board.width || /[^FILNPTUVWXYZ.]/.test(r)))
+      throw new Error(`Malformed ${board.id} reference line: ${line}`);
+    const number = Number(prefix.slice(0, -1)), cells = rows.join('');
+    const holes = new Set(board.blocked.map(([x, y]) => y * board.width + x));
+    if ([...cells].some((v, i) => (v === '.') !== holes.has(i)))
+      throw new Error(`Invalid holes in ${board.id} reference #${number}`);
+    const key = frameKey(cells, board), group = frameXGroup(cells, board);
+    if (number < 1 || number > expectedSize || numbers.has(number) || byGrid.has(key))
+      throw new Error(`Duplicate or invalid ${board.id} reference #${number}`);
+    numbers.add(number);
+    groups[group] = (groups[group] || 0) + 1;
+    byGrid.set(key, { number, group, name: `Solution #${number}`, boardId: board.id });
+  }
+  if (numbers.size !== expectedSize) throw new Error(`Incomplete ${board.id} reference`);
+  return { groups: Object.fromEntries(Object.entries(groups).sort()), total: expectedSize,
+    lookup: (cells) => typeof cells === 'string' && cells.length === board.width * board.height
+      ? byGrid.get(frameKey(cells, board)) ?? null : null };
+}

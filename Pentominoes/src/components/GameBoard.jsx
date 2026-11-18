@@ -12,7 +12,8 @@ import {
   Undo2,
 } from 'lucide-react';
 import { LETTERS, PIECES, pointsFor } from '../core/puzzle.js';
-import { BOARDS, DEFAULT_BOARD, getBoard } from '../core/boards.js';
+import { getBoard } from '../core/boards.js';
+import { FramePicker } from './FramePicker.jsx';
 import {
   bringForward,
   gameCells,
@@ -115,8 +116,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
     [focus, setFocus] = useState(0),
     [message, report] = useState(''),
     [reset, setReset] = useState(false),
-    [boardPicker, setBoardPicker] = useState(false),
-    [boardChoice, setBoardChoice] = useState(game.boardId ?? DEFAULT_BOARD);
+    [boardPicker, setBoardPicker] = useState(false);
   const board = getBoard(game.boardId);
   const COLS = board.width, ROWS = board.height;
   const { pieces, stack: placed } = game;
@@ -211,7 +211,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           <h2 id="game-title">{board.name}</h2>
         </div>
         <div className="game-meta">
-          <button className="btn btn-light board-select" type="button" onClick={() => { setBoardChoice(board.id); setBoardPicker(true); }}>Change Frame</button>
+          <button className="btn btn-light board-select" type="button" onClick={() => setBoardPicker(true)}>Change Frame</button>
           <span className={complete ? 'complete' : ''}>{placed.length} / 12 placed</span>
         </div>
       </div>
@@ -394,40 +394,19 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           </button>
         </div>
       </div>
-      {complete && board.id !== DEFAULT_BOARD && (
-        <p className="board-solved" role="status">All twelve pieces fit! Collection saving is available for the 6×10 frame only.</p>
-      )}
-      {complete && board.id === DEFAULT_BOARD && (
-        <SolutionResult cells={cells} collection={collection} onSave={onSave} onView={onView} />
+      {complete && (
+        <SolutionResult cells={cells} boardId={board.id} collection={collection} onSave={onSave} onView={onView} />
       )}
       {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
       {boardPicker && (
-        <Dialog title="Choose a gameboard" eyebrow="GAME BOARD" description={placed.length ? 'Changing boards returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares. Collection saving is currently available for 6×10 solutions only.'} onClose={() => setBoardPicker(false)} wide>
-          <div className="board-options" role="radiogroup" aria-label="Board layouts">
-            {BOARDS.map((option) => (
-              <label className="board-option" key={option.id}>
-                <input type="radio" name="game-board" value={option.id} checked={boardChoice === option.id} onChange={() => setBoardChoice(option.id)} />
-                <svg aria-hidden="true" viewBox={`0 0 ${option.width} ${option.height}`} preserveAspectRatio="xMidYMid meet">
-                  {Array.from({ length: option.width * option.height }, (_, i) => (
-                    <rect key={i} x={i % option.width} y={Math.floor(i / option.width)} width="1" height="1" fill="var(--well)" stroke="var(--line-strong)" strokeWidth=".06" />
-                  ))}
-                  {option.blocked.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" className="blocked-square" />)}
-                </svg>
-                <span>{option.name}</span>
-              </label>
-            ))}
-          </div>
-          <div className="dialog-actions">
-            <button className="btn btn-light" onClick={() => setBoardPicker(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={() => {
-              if (boardChoice !== board.id) {
-                onChange(newGame(boardChoice));
-                setSelected(null); setAim(false); setFocus(0); report('');
-              }
-              setBoardPicker(false);
-            }}>Use board</button>
-          </div>
-        </Dialog>
+        <FramePicker current={board.id} description={placed.length ? 'Changing boards returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares.'}
+          onClose={() => setBoardPicker(false)} onChoose={(id) => {
+            if (id !== board.id) {
+              onChange(newGame(id));
+              setSelected(null); setAim(false); setFocus(0); report('');
+            }
+            setBoardPicker(false);
+          }} />
       )}
       {reset && (
         <Dialog

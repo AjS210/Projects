@@ -18,17 +18,22 @@ import { Dialog, Notice } from './Dialog.jsx';
 import { asTable } from '../core/puzzle.js';
 import { formatDate, packRecords } from '../core/collection.js';
 import { XGroupFilter, XPosition } from './XGroups.jsx';
+import { DEFAULT_BOARD, getBoard } from '../core/boards.js';
+import { FramePicker } from './FramePicker.jsx';
 
 export function Collection({ records, onImport, onOpen, onScan }) {
   const [search, setSearch] = useState(''),
     [limit, setLimit] = useState(12),
-    [group, setGroup] = useState('');
+    [group, setGroup] = useState(''),
+    [boardId, setBoardId] = useState(DEFAULT_BOARD),
+    [choosingFrame, setChoosingFrame] = useState(false);
+  const frameRecords = useMemo(() => records.filter((r) => (r.boardId ?? DEFAULT_BOARD) === boardId), [records, boardId]);
   const { sorted, counts } = useMemo(() => {
     const counts = {};
-    for (const { reference } of records)
+    for (const { reference } of frameRecords)
       counts[reference.group] = (counts[reference.group] || 0) + 1;
-    return { sorted: [...records].sort((a, b) => a.reference.number - b.reference.number), counts };
-  }, [records]);
+    return { sorted: [...frameRecords].sort((a, b) => a.reference.number - b.reference.number), counts };
+  }, [frameRecords]);
   const query = search.trim().toLowerCase(),
     number = /^(?:solution\s+#|#)?(\d+)$/.exec(query);
   const filtered = sorted.filter(
@@ -59,7 +64,7 @@ export function Collection({ records, onImport, onOpen, onScan }) {
             <Layers size={18} />
           </span>
           <h2 id="saved-title">Saved solutions</h2>
-          <span className="number-pill">{records.length}</span>
+          <span className="number-pill">{frameRecords.length}</span>
         </div>
         <div className="collection-tools">
           <button
@@ -77,8 +82,12 @@ export function Collection({ records, onImport, onOpen, onScan }) {
           </button>
         </div>
       </div>
-      <XGroupFilter group={group} counts={counts} total={records.length} onChange={changeGroup} />
-      {records.length > 0 && (
+      <div className="collection-frame-row">
+        <div><span className="small-label">COLLECTION FRAME</span><strong>{getBoard(boardId).name}</strong></div>
+        <button className="btn btn-light" type="button" onClick={() => setChoosingFrame(true)}>Change Frame</button>
+      </div>
+      <XGroupFilter key={boardId} boardId={boardId} group={group} counts={counts} total={frameRecords.length} onChange={changeGroup} />
+      {frameRecords.length > 0 && (
         <div className="search-box">
           <Search size={16} />
           <input
@@ -97,7 +106,7 @@ export function Collection({ records, onImport, onOpen, onScan }) {
           )}
         </div>
       )}
-      {!records.length ? (
+      {!frameRecords.length ? (
         <div className="empty-collection">
           <div className="empty-symbol">
             <Archive size={30} />
@@ -142,7 +151,7 @@ export function Collection({ records, onImport, onOpen, onScan }) {
               onClick={() => onOpen(r)}
             >
               <span className="entry-board" aria-hidden="true">
-                <Board cells={r.cells} labels={false} letters={false} />
+                <Board cells={r.cells} boardId={r.boardId} labels={false} letters={false} />
               </span>
             </button>
           ))}
@@ -160,8 +169,9 @@ export function Collection({ records, onImport, onOpen, onScan }) {
       )}
       <div className="collection-foot">
         <ShieldCheck size={14} />
-        Identical boards, reflections, and half-turns count as one solution.
+        Equivalent orientations within the same frame count as one solution.
       </div>
+      {choosingFrame && <FramePicker current={boardId} title="Choose a collection frame" eyebrow="COLLECTION" description="Choose which frame’s saved solutions to view. Your game board will not change." onClose={() => setChoosingFrame(false)} onChoose={(id) => { setBoardId(id); setSearch(''); changeGroup(''); setChoosingFrame(false); }} />}
     </section>
   );
 }
@@ -176,7 +186,7 @@ export function SaveDialog({ cells, reference, onClose, onSave }) {
     >
       <div className="save-preview">
         <div>
-          <Board cells={cells} labels={false} letters={false} />
+          <Board cells={cells} boardId={reference.boardId} labels={false} letters={false} />
         </div>
         <span>
           <span className="small-label">VERIFIED BOARD</span>
@@ -216,7 +226,7 @@ export function EntryDialog({ record, onClose, onRemove }) {
     [fallback, setFallback] = useState(false);
   async function copy() {
     try {
-      await navigator.clipboard.writeText(asTable(record.cells));
+      await navigator.clipboard.writeText(asTable(record.cells, getBoard(record.boardId).width, getBoard(record.boardId).height));
       setCopied(true);
     } catch {
       setFallback(true);
@@ -231,11 +241,11 @@ export function EntryDialog({ record, onClose, onRemove }) {
       onClose={onClose}
     >
       <div className="board-stage detail-stage">
-        <Board cells={record.cells} />
+        <Board cells={record.cells} boardId={record.boardId} />
       </div>
       <div className="detail-meta">
         <span>
-          <XPosition group={record.reference.group} />X group {record.reference.group}
+          <XPosition group={record.reference.group} boardId={record.boardId} />X group {record.reference.group}
         </span>
         <span>
           <ShieldCheck size={14} />
@@ -251,7 +261,7 @@ export function EntryDialog({ record, onClose, onRemove }) {
           <textarea
             id="copy-data"
             className="grid-paste"
-            value={asTable(record.cells)}
+            value={asTable(record.cells, getBoard(record.boardId).width, getBoard(record.boardId).height)}
             readOnly
             onFocus={(e) => e.target.select()}
             autoFocus

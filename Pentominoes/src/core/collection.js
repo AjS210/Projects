@@ -1,4 +1,5 @@
-import { validateBoard, parseGrids } from './puzzle.js';
+import { parseGrids, identifyPoints, LETTERS } from './puzzle.js';
+import { BOARDS, DEFAULT_BOARD } from './boards.js';
 
 export const STORE = 'pentolog.collection.v1';
 export const formatDate = (value) =>
@@ -12,6 +13,7 @@ function personalFields(s, id = s.id) {
     name: label(s.name),
     ...(label(s.previousName) && { previousName: label(s.previousName) }),
     cells: s.cells,
+    ...(s.boardId && s.boardId !== DEFAULT_BOARD && { boardId: s.boardId }),
     createdAt:
       typeof s.createdAt === 'string' && Number.isFinite(Date.parse(s.createdAt))
         ? s.createdAt
@@ -26,7 +28,13 @@ function backupEntries(text) {
 }
 export function unpackRecords(text) {
   return backupEntries(text).map((s, i) => {
-    if (typeof s?.cells !== 'string' || s.cells.length !== 60 || !validateBoard(s.cells).valid)
+    const board = BOARDS.find((b) => b.id === (s?.boardId ?? DEFAULT_BOARD));
+    const cells = s?.cells;
+    const holes = new Set(board?.blocked.map(([x, y]) => y * board.width + x));
+    const valid = board && typeof cells === 'string' && cells.length === board.width * board.height &&
+      [...cells].every((v, i) => holes.has(i) ? v === '.' || v === '#' : LETTERS.includes(v)) &&
+      LETTERS.every((l) => identifyPoints([...cells].flatMap((v, i) => v === l ? [[i % board.width, Math.floor(i / board.width)]] : [])) === l);
+    if (!valid)
       throw new Error(`Entry ${i + 1} is not a valid pentomino grid.`);
     return personalFields(s);
   });
@@ -49,10 +57,11 @@ export function parseImport(text) {
 
 export function createCollectionStore(lookup) {
   function identify(s) {
-    const ref = lookup(s?.cells);
+    if (!BOARDS.some((b) => b.id === (s?.boardId ?? DEFAULT_BOARD))) throw new Error('Unknown frame.');
+    const ref = lookup(s?.cells, s?.boardId ?? DEFAULT_BOARD);
     if (!ref)
       throw new Error(
-        'Only complete boards with all twelve verified shapes in the 6 × 10 reference can be saved.',
+        'Only complete boards with all twelve verified shapes in the selected frame’s reference can be saved.',
       );
     return ref;
   }
@@ -74,12 +83,13 @@ export function createCollectionStore(lookup) {
   }
   function mergeRecords(existing, incoming) {
     const records = [...existing];
-    const numbers = new Set(existing.map((s) => identify(s).number));
+    const numbers = new Set(existing.map((s) => `${s.boardId ?? DEFAULT_BOARD}:${identify(s).number}`));
     let added = 0;
     for (const entry of incoming) {
       const ref = identify(entry);
-      if (numbers.has(ref.number)) continue;
-      numbers.add(ref.number);
+      const key = `${entry.boardId ?? DEFAULT_BOARD}:${ref.number}`;
+      if (numbers.has(key)) continue;
+      numbers.add(key);
       records.unshift(titled(entry, ref, crypto.randomUUID()));
       added++;
     }
