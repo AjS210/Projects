@@ -116,8 +116,10 @@ screen. Details and design consequences:
 
 Full analysis: [docs/azahar-build-research.md](docs/azahar-build-research.md).
 
+Run project-relative commands from this `Emul8or/` folder, not from the shared repository root. Git remotes and tags are still shared by the whole clone. The historical upstream-merge plans assume an emulator-only repository; don't merge an emulator tree into the root of this projects collection.
+
 Upstream is tracked as a git remote pinned to a tested release tag (currently **`2126.1.2`**). Set it
-up with:
+up for inspection with:
 
 ```bash
 ./scripts/setup-upstream.sh

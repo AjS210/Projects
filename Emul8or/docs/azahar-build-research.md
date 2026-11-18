@@ -331,8 +331,7 @@ Output lands in `src/android/app/build/outputs/apk/vanilla/relWithDebInfo/`.
 
 ## 9. Adding Azahar as upstream
 
-Emul8or's repository is currently empty apart from documentation. Azahar source needs to arrive in a
-way that makes ongoing rebases tractable.
+These are the original options for a **dedicated emulator repository**. The documentation now lives in `Emul8or/` in a shared projects repository. Do not execute the merge examples below in that shared clone; use a separate emulator-only checkout.
 
 ### Step 1 — add the remote
 

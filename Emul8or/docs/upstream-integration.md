@@ -1,5 +1,7 @@
 # Upstream Integration Plan
 
+> **Repository layout note:** This plan was written for a standalone Emul8or repository. The project's docs and scripts now live in `Emul8or/`. Run the inspection script there. Do **not** run the upstream merge/import examples in the shared projects checkout: `git merge` operates on the whole repository, even from a subfolder. Use a separate emulator-only checkout for those experiments.
+
 How Azahar source gets into Emul8or, and the exact plan for building it **unmodified** before any
 Emul8or feature work begins.
 

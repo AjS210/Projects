@@ -177,12 +177,13 @@ WSL2 with the Linux instructions is frequently the smoother route.
 
 Emul8or currently contains documentation only; Azahar source arrives in roadmap phase 1.
 
-**Clone Emul8or:**
+**Open Emul8or:** clone the shared projects repository using the URL under GitHub's **Code** button. From the root of that clone:
 
 ```bash
-git clone https://github.com/AjS210/Emul8or.git
 cd Emul8or
 ```
+
+Git remotes are clone-wide. Use the following remote only for inspecting upstream; do standalone builds in a **separate checkout outside this repository**.
 
 **Add Azahar as upstream:**
 
@@ -192,9 +193,10 @@ git fetch upstream --tags
 ```
 
 **To build unmodified Azahar first** — which roadmap phase 1 requires before any Emul8or work —
-clone it separately:
+clone it separately, for example in `~/src` outside the projects checkout:
 
 ```bash
+cd ~/src
 git clone --recursive https://github.com/azahar-emu/azahar.git
 cd azahar
 git checkout 2126.1.2

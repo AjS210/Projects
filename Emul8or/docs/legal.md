@@ -25,7 +25,7 @@ This is not a choice so much as an inheritance. Emul8or derives from
 [Azahar](https://github.com/azahar-emu/azahar), which is GPL-2.0-or-later, itself descended from
 Citra. A derivative work of GPL-2.0-or-later code must be distributed under the same terms.
 
-The full licence text is in [`LICENSE`](../LICENSE) at the repository root.
+The full licence text is in [`LICENSE`](../LICENSE) at the root of the Emul8or project folder.
 
 ### What this obliges us to do
 

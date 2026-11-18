@@ -7,8 +7,9 @@ import { boards, sheetJpg } from '../fixtures/sheetPhoto.js';
 // Exercise the actual file picker, SVG hit targets, pointer capture, scan worker
 // and React selection state. No private screenshot, persistent server or account.
 test('after bulk import, move the frame to another board, resize, read and switch again', async (t) => {
+  const base = '/Projects/Pentominoes/';
   const site = await preview({
-    base: '/Emul8or/',
+    base,
     preview: { host: '0.0.0.0', port: 0 },
     logLevel: 'silent',
   });
@@ -38,7 +39,7 @@ test('after bulk import, move the frame to another board, resize, read and switc
     );
     assert.ok(await button('Choose from 4 boards').isEnabled());
   };
-  await page.goto(`http://127.0.0.1:${site.httpServer.address().port}/Emul8or/#collection`);
+  await page.goto(`http://127.0.0.1:${site.httpServer.address().port}${base}#collection`);
   await button('Import grids').click();
   await page.getByLabel('Choose grid or backup file').setInputFiles({
     name: 'sheet.jpg',
