@@ -27,6 +27,7 @@ import { Notice } from './Dialog.jsx';
 export function Scanner({
   photo,
   photoBoards,
+  corners,
   boardIndex,
   onChooseBoard,
   cells,
@@ -122,14 +123,14 @@ export function Scanner({
                 }
                 className={`input-photo ${photo.sample ? '' : 'user-photo'}`}
               />
-              {photoBoards.length > 1 && (
+              {!photo.sample && (
                 <svg
                   className="board-outline"
                   viewBox={`0 0 ${photo.width} ${photo.height}`}
                   aria-hidden="true"
                 >
                   <polygon
-                    points={photoBoards[boardIndex].corners
+                    points={corners
                       .map(([x, y]) => `${x * photo.width},${y * photo.height}`)
                       .join(' ')}
                     fill="none"
@@ -142,7 +143,9 @@ export function Scanner({
               <div className="photo-caption">
                 <span className="photo-indicator" />
                 {photoBoards.length > 1
-                  ? `Board ${boardIndex + 1} of ${photoBoards.length}`
+                  ? boardIndex < 0
+                    ? 'Custom frame'
+                    : `Board ${boardIndex + 1} of ${photoBoards.length}`
                   : photo.sample
                     ? 'Sample photo'
                     : 'Your photo'}
@@ -152,6 +155,7 @@ export function Scanner({
                 className="photo-expand"
                 aria-label="Expand photo"
                 title="Expand photo"
+                disabled={busy}
                 onClick={onExpand}
               >
                 <Maximize2 size={16} />
@@ -192,7 +196,11 @@ export function Scanner({
               <span className="filetypes">JPG, PNG, WEBP</span>
             </button>
             {photoBoards.length > 1 && (
-              <button className="board-switch btn btn-light" onClick={onChooseBoard}>
+              <button
+                className="board-switch btn btn-light"
+                onClick={onChooseBoard}
+                disabled={busy}
+              >
                 <Layers size={15} />
                 Choose from {photoBoards.length} boards
               </button>

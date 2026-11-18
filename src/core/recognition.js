@@ -2,6 +2,7 @@ import { BLANK, identify } from './puzzle.js';
 import { fitEdges } from './fitEdges.js';
 import { decodeColors } from './digitalGrid.js';
 import { findScreenBoards } from './screenBoards.js';
+import { frameBounds } from './photoFrames.js';
 
 // All frame points are normalized image coordinates, clockwise around the board.
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -65,17 +66,12 @@ export function moveLinkedCorner(frame, corner, dx, dy) {
 }
 
 export function straightenFrame(frame) {
-  const xs = frame.map(([x]) => x),
-    ys = frame.map(([, y]) => y);
-  const l = Math.min(...xs),
-    r = Math.max(...xs),
-    t = Math.min(...ys),
-    b = Math.max(...ys);
+  const { left, right, top, bottom } = frameBounds(frame);
   return [
-    [l, t],
-    [r, t],
-    [r, b],
-    [l, b],
+    [left, top],
+    [right, top],
+    [right, bottom],
+    [left, bottom],
   ];
 }
 

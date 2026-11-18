@@ -74,6 +74,7 @@ export async function readImportFile(file, signal) {
     const title = file.name.replace(/\.[^.]+$/, '').slice(0, 55) || 'Photo';
     return {
       kind: 'image',
+      source: { photo, result },
       records: (result.boards || [result]).map((b, i) => ({
         cells: b.cells,
         name: `${title} · Board ${i + 1}`,

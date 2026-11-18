@@ -36,7 +36,10 @@ export function PhotoBoardsDialog({ boards, photo, active, onChoose, onImport, o
           );
         })}
       </div>
-      <p className="found-hint">Mirrored or already saved solutions will be skipped.</p>
+      <p className="found-hint">
+        Bulk import uses the original verified boards. Mirrored or already saved solutions are
+        skipped.
+      </p>
       {error && <Notice error>{error}</Notice>}
       <div className="dialog-actions">
         <button className="btn btn-light" onClick={onClose}>

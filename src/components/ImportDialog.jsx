@@ -84,7 +84,7 @@ export function ImportDialog({ onClose, onImport }) {
     try {
       const records = tab === 'file' ? stage?.records : readGridText(text);
       if (!records?.length) throw new Error('Choose a workbook or image, or paste a grid first.');
-      onImport(records);
+      onImport(records, tab === 'file' ? stage?.source : undefined);
     } catch (err) {
       setError(err instanceof SyntaxError ? 'The backup is not valid JSON.' : err.message);
     }
@@ -172,6 +172,7 @@ export function ImportDialog({ onClose, onImport }) {
                 <p>
                   {records.length > 4 ? `Showing the first 4 of ${records.length}. ` : ''}Nothing is
                   saved until you import.
+                  {stage.kind === 'image' && ' You can then adjust this photo in Workspace.'}
                 </p>
               </div>
             )}

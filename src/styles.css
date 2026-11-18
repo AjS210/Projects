@@ -1151,6 +1151,43 @@ textarea::placeholder,
   touch-action: none;
   user-select: none;
 }
+.frame-jump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.frame-jump select {
+  font: inherit;
+  color: var(--purple-dark);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  min-height: 36px;
+  padding: 5px 8px;
+}
+.frame-jump-target {
+  cursor: pointer;
+  fill: transparent;
+  stroke: #f1edf9;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.frame-jump-target:hover {
+  fill: #ffffff1a;
+}
+.frame-body {
+  cursor: move;
+}
+.frame-body:focus-visible {
+  stroke: #ffeb95;
+  outline: none;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
 .corner-handle {
   cursor: grab;
   outline: none;

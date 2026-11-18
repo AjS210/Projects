@@ -30,6 +30,7 @@ import { readCollection, writeCollection, mergeRecords, STORE } from './core/col
 import { ImportDialog } from './components/ImportDialog.jsx';
 import { PhotoBoardsDialog } from './components/PhotoBoardsDialog.jsx';
 import { FULL_FRAME } from './core/recognition.js';
+import { boardAtFrame, rememberReview } from './core/photoFrames.js';
 import { openPhoto, scanPhoto, PHOTO_TYPES } from './core/photo.js';
 
 function readLocal() {
@@ -54,8 +55,8 @@ export default function App() {
     [error, setError] = useState(''),
     [modal, setModal] = useState(null),
     [opened, setOpened] = useState(null);
-  const [photoBoards, setPhotoBoards] = useState([]),
-    [boardIndex, setBoardIndex] = useState(0);
+  const [photoBoards, setPhotoBoards] = useState([]);
+  const boardIndex = useMemo(() => boardAtFrame(photoBoards, corners), [photoBoards, corners]);
   const [toast, setToast] = useState(null);
   const controller = useRef(null),
     nativeCamera = useRef(null),
@@ -101,6 +102,14 @@ export default function App() {
     setModal('entry');
   };
   const record = local.records.find((r) => r.id === opened);
+  function showReading(reading) {
+    setCells(reading.cells);
+    setCorners(reading.corners);
+  }
+  function loadDetections(result) {
+    setPhotoBoards(result.boards || []);
+    showReading(result);
+  }
   async function readBoard({ file, frame }) {
     controller.current?.abort();
     const ctl = new AbortController();
@@ -114,21 +123,28 @@ export default function App() {
         currentPhoto = await openPhoto(file);
         ctl.signal.throwIfAborted();
         setPhotoBoards([]);
-        setBoardIndex(0);
         setPhoto(currentPhoto);
         setCells(BLANK);
         setCorners(FULL_FRAME);
+      } else if (frame) {
+        // Show the submitted region immediately. If the worker fails, retry from
+        // this location instead of showing the old board's letters or frame.
+        setCorners(frame);
+        setCells(BLANK);
       }
       const result = await scanPhoto(currentPhoto, frame, ctl.signal);
       ctl.signal.throwIfAborted();
-      setCells(result.cells);
-      setCorners(result.corners);
-      const boards = result.boards || [];
-      setPhotoBoards(boards);
-      setBoardIndex(0);
-      if (boards.length > 1) {
-        setModal('boards');
-        return;
+      if (frame) {
+        // A requested-region scan returns one reading, not a new catalogue.
+        // Keep all jump targets and apply these pixels at their actual location.
+        setPhotoBoards((boards) => rememberReview(boards, result));
+        showReading(result);
+      } else {
+        loadDetections(result);
+        if (result.boards?.length > 1) {
+          setModal('boards');
+          return;
+        }
       }
       notify(
         result.found === 12
@@ -175,9 +191,18 @@ export default function App() {
         : 'This solution is already in your collection.',
     );
   }
-  function importRecords(incoming) {
+  function importRecords(incoming, source) {
     const { records, added, skipped } = mergeRecords(latest(), incoming);
     store(records);
+    // A Collection image import can also be reviewed in Workspace this session.
+    // Never save photos to storage or reset an existing review of the same image.
+    if (source && (busy || photo.url !== source.photo.url)) {
+      controller.current?.abort();
+      setBusy(false);
+      setError('');
+      setPhoto(source.photo);
+      loadDetections(source.result);
+    }
     close();
     notify(
       `${added} solution${added === 1 ? '' : 's'} added${skipped ? ` · ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.`,
@@ -187,7 +212,6 @@ export default function App() {
     controller.current?.abort();
     setBusy(false);
     setPhotoBoards([]);
-    setBoardIndex(0);
     setPhoto(SAMPLE_PHOTO);
     setCorners(SAMPLE_FRAME);
     setCells(SAMPLE);
@@ -269,6 +293,7 @@ export default function App() {
           <Scanner
             photo={photo}
             photoBoards={photoBoards}
+            corners={corners}
             boardIndex={boardIndex}
             onChooseBoard={() => setModal('boards')}
             cells={cells}
@@ -358,9 +383,9 @@ export default function App() {
               <div>
                 <h3>Check the grid</h3>
                 <p>
-                  Compare the letters with your board. In Adjust frame, drag a corner to move its
-                  linked edges. Use Edit grid to correct cells. All 12 five-cell shapes must be
-                  valid.
+                  In Adjust frame, drag inside the grid to move it, or drag its linked corners to
+                  resize it. On a screenshot you can jump to another detected board. Tap Read grid,
+                  then use Edit grid to correct any cells.
                 </p>
               </div>
             </li>
@@ -404,9 +429,7 @@ export default function App() {
           active={boardIndex}
           onClose={close}
           onChoose={(i) => {
-            setBoardIndex(i);
-            setCells(photoBoards[i].cells);
-            setCorners(photoBoards[i].corners);
+            showReading(photoBoards[i].review ?? photoBoards[i]);
             close();
           }}
           onImport={() =>
@@ -423,6 +446,7 @@ export default function App() {
         <AlignDialog
           photo={photo}
           corners={corners}
+          boards={photoBoards}
           onClose={close}
           onRead={(frame) => readBoard({ frame })}
         />
@@ -445,7 +469,8 @@ export default function App() {
           cells={cells}
           onClose={close}
           onApply={(draft) => {
-            if (draft !== cells) setPhotoBoards([]);
+            if (draft !== cells)
+              setPhotoBoards((boards) => rememberReview(boards, { cells: draft, corners }));
             setCells(draft);
             close();
             notify('Grid changes applied.');
