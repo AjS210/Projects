@@ -29,9 +29,36 @@ import { usePieceDrag } from './usePieceDrag.js';
 
 const UNIT = 8; // artwork units per cell
 const transforms = [
-  ['horizontal', 'Flip horizontal', FlipVertical2],
-  ['vertical', 'Flip vertical', FlipHorizontal2],
-  ['rotate', 'Rotate 90°', RotateCw],
+  {
+    action: 'horizontal',
+    label: 'Flip horizontal',
+    compact: 'Flip H',
+    Icon: FlipVertical2,
+    result: 'flipped left to right',
+  },
+  {
+    action: 'vertical',
+    label: 'Flip vertical',
+    compact: 'Flip V',
+    Icon: FlipHorizontal2,
+    result: 'flipped top to bottom',
+  },
+  {
+    action: 'rotateCCW',
+    label: '90° left',
+    compact: 'Left',
+    name: 'Rotate 90° left (counterclockwise)',
+    Icon: RotateCcw,
+    result: 'rotated counterclockwise',
+  },
+  {
+    action: 'rotate',
+    label: '90° right',
+    compact: 'Right',
+    name: 'Rotate 90° right (clockwise)',
+    Icon: RotateCw,
+    result: 'rotated clockwise',
+  },
 ];
 const rowLabel = (y) => String.fromCharCode(65 + y);
 const locationName = (x, y) => `${rowLabel(y)}${x + 1}`;
@@ -127,12 +154,10 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       );
     }
   }
-  function turn(action) {
+  function turn({ action, result }) {
     if (!pieces[selected]?.at) return;
     onChange(turnPiece(game, selected, action));
-    report(
-      `${selected} ${action === 'rotate' ? 'rotated clockwise' : action === 'horizontal' ? 'flipped left to right' : 'flipped top to bottom'}.`,
-    );
+    report(`${selected} ${result}.`);
   }
   const { start, preview, events } = usePieceDrag({ game, plane, tray, select, drop, report });
   function activateCell(i) {
@@ -291,17 +316,23 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             </span>
           </div>
           <div className="game-transforms" role="group" aria-label="Turn selected board piece">
-            {transforms.map(([action, label, Icon]) => (
-              <button
-                key={action}
-                className="btn btn-light"
-                disabled={!pieces[selected]?.at || Boolean(preview)}
-                onClick={() => turn(action)}
-              >
-                <Icon size={16} />
-                {label}
-              </button>
-            ))}
+            {transforms.map((control) => {
+              const { action, label, compact, name = label, Icon } = control;
+              return (
+                <button
+                  key={action}
+                  className="btn btn-light"
+                  aria-label={name}
+                  title={name}
+                  disabled={!pieces[selected]?.at || Boolean(preview)}
+                  onClick={() => turn(control)}
+                >
+                  <Icon size={16} aria-hidden="true" />
+                  <span className="turn-label-full">{label}</span>
+                  <span className="turn-label-compact">{compact}</span>
+                </button>
+              );
+            })}
           </div>
           <div className="tray-heading">
             <h3>Piece tray</h3>

@@ -186,8 +186,9 @@
   color: var(--accent-hover);
 }
 .game-transforms {
+  container: board-controls / inline-size;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
   margin: 0 0 12px;
 }
@@ -195,9 +196,22 @@
   min-height: 44px;
   padding: 6px 3px;
   font-size: 12px;
+  white-space: normal;
 }
 .game-transforms .btn svg {
   color: var(--accent);
+}
+.turn-label-compact {
+  display: none;
+}
+/* Four full-size tap targets in the narrow rail, without widening it or the tray. */
+@container board-controls (max-width: 360px) {
+  .turn-label-full {
+    display: none;
+  }
+  .turn-label-compact {
+    display: inline;
+  }
 }
 .tray-heading {
   border-top: 1px solid var(--line);

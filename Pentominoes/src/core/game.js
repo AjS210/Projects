@@ -29,6 +29,7 @@ export function handleSquare(points) {
 export function transformed(points, turn) {
   const next = points.map(([x, y]) => {
     if (turn === 'rotate') return [-y, x]; // clockwise in screen coordinates
+    if (turn === 'rotateCCW') return [y, -x];
     if (turn === 'horizontal') return [-x, y];
     if (turn === 'vertical') return [x, -y];
     throw new Error('Unknown piece transform');

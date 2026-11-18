@@ -6,6 +6,9 @@ import { DRAFT_KEY } from '../../src/core/gameDraft.js';
 import { BLANK, SAMPLE, asTable, variants } from '../../src/core/puzzle.js';
 import { boards, sheetJpg } from '../fixtures/sheetPhoto.js';
 
+const turnLeft = 'Rotate 90° left (counterclockwise)';
+const turnRight = 'Rotate 90° right (clockwise)';
+
 const center = async (loc) => {
   const { x, y, width, height } = await loc.boundingBox();
   return { x: x + width / 2, y: y + height / 2 };
@@ -49,6 +52,7 @@ test('finger and mouse drags keep the grabbed square, allow overlaps and turn at
   assert.equal(await read(), BLANK);
   assert.equal(await tile('X').getAttribute('aria-pressed'), 'false');
   assert.ok(await action('Flip horizontal').isDisabled());
+  assert.ok(await action(turnLeft).isDisabled());
   assert.equal(await game.getByRole('button', { name: 'Save solution' }).count(), 0);
   await drag(tile('X'), cell(12), async () => {
     await page.getByText('Release to place X.').waitFor();
@@ -87,7 +91,7 @@ test('finger and mouse drags keep the grabbed square, allow overlaps and turn at
   await page.mouse.up();
   const floor = await read();
   assert.deepEqual(indices(floor, 'I'), [50, 51, 52, 53, 54]);
-  await action('Rotate 90°').click();
+  await action(turnRight).click();
   assert.deepEqual(
     indices(await read(), 'I'),
     [12, 22, 32, 42, 52],
@@ -105,8 +109,11 @@ test('finger and mouse drags keep the grabbed square, allow overlaps and turn at
   assert.deepEqual(indices(await read(), 'F'), [11, 12, 22, 23, 32]);
   await action('Flip vertical').click();
   assert.deepEqual(indices(await read(), 'F'), [12, 22, 23, 31, 32]);
-  await action('Rotate 90°').click();
+  await action(turnRight).click();
   assert.deepEqual(indices(await read(), 'F'), [11, 21, 22, 23, 32]);
+  await action(turnLeft).tap();
+  assert.deepEqual(indices(await read(), 'F'), [12, 22, 23, 31, 32]);
+  await game.getByText('F rotated counterclockwise.', { exact: true }).waitFor();
   assert.equal(await art(), thumbnail, 'transform buttons never rotate the option card');
   assert.equal(await saved(), null);
 });
@@ -116,7 +123,7 @@ test('a numbered playthrough and an independently reviewed upload share catalogu
   page.setDefaultTimeout(6500);
   const { game, upload, tile, cell, read, scan, saved, action } = tools(page);
   const first = 'FFIIIIILZZVFFYLLLLZNVFYYYYXZZNVVVTWXXXNNPPPTWWXUNUPPTTTWWUUU';
-  const labels = { H: 'Flip horizontal', V: 'Flip vertical', R: 'Rotate 90°' };
+  const labels = { H: 'Flip horizontal', V: 'Flip vertical', R: turnRight };
   // Actions are in screen space; coordinates below are the *marked squares*,
   // not an implementation's bounding-box origins. Every input is public UI.
   const plan = [
@@ -265,7 +272,7 @@ test('a fully covered piece can be raised by its card; an overlapping draft resu
   await tile(buried).tap();
   await action('Flip horizontal').tap();
   await action('Flip vertical').tap();
-  await action('Rotate 90°').tap();
+  await action(turnRight).tap();
   const front = await read();
   assert.equal([...front].filter((l) => l === buried).length, 5);
   assert.equal(await game.locator('.field-piece').last().getAttribute('data-letter'), buried);
@@ -290,7 +297,7 @@ test('rotating a phone puts the 3 × 4 tray beside a larger field and the upload
   await tile('X').tap();
   await cell(12).tap();
   await tile('I').tap();
-  await action('Rotate 90°').tap();
+  await action(turnRight).tap();
   const started = await draft();
   const [, , uprightBoard, uprightRack] = await boxes();
   assert.ok(
@@ -352,7 +359,7 @@ test('rotating a phone puts the 3 × 4 tray beside a larger field and the upload
     const targets = await game
       .locator('.tray-piece, .game-transforms button')
       .evaluateAll((nodes) => nodes.map((el) => el.getBoundingClientRect().toJSON()));
-    assert.equal(targets.length, 15);
+    assert.equal(targets.length, 16);
     for (const b of targets)
       assert.ok(
         b.left >= tray.x - 0.5 &&

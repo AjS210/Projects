@@ -30,6 +30,7 @@ test('the tray contains one of each real piece, with occupied handles in every o
         assert.ok(indices(q).includes(indices([handleSquare(q)])[0]));
         assert.deepEqual(transformed(transformed(q, 'horizontal'), 'horizontal'), q);
         assert.deepEqual(transformed(transformed(q, 'vertical'), 'vertical'), q);
+        assert.deepEqual(transformed(transformed(q, 'rotateCCW'), 'rotate'), q);
       }
       p = transformed(p, 'rotate');
     }
@@ -78,6 +79,17 @@ test('rim turns and drops slide inside, even on occupied squares', () => {
     }
   }
   for (const at of [[0.5, 0], [0, NaN], [0]]) assert.equal(placePiece(game, 'I', at), game);
+});
+
+test('a counterclockwise turn at the right edge pivots once and stays above overlapping pieces', () => {
+  const game = placePiece(placePiece(newGame(), 'L', [8, 0]), 'I', [5, 2]);
+  const next = turnPiece(game, 'L', 'rotateCCW');
+  // Three clockwise turns would hit the rim mid-turn and shift the L one column left.
+  assert.deepEqual(next.pieces.L.at, [6, 1]);
+  assert.deepEqual(indices(next.pieces.L.points), [3, 10, 11, 12, 13]);
+  assert.equal(gameCells(next).slice(25, 30), 'ILLLL');
+  assert.equal(next.pieces.I, game.pieces.I);
+  assert.deepEqual(next.stack, ['I', 'L']);
 });
 
 test('putting all twelve pieces on the board is not by itself a solution', () => {
