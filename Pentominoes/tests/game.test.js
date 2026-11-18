@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BLANK, COLS, LETTERS, identify, pointsFor, validateBoard } from '../src/core/puzzle.js';
 import {
-  fits,
+  bringForward,
+  pickPiece,
   gameCells,
   handleSquare,
   newGame,
@@ -17,10 +18,10 @@ const indices = (p) => p.map(([x, y]) => x + COLS * y);
 
 test('the tray contains one of each real piece, with occupied handles in every orientation', () => {
   const game = newGame();
-  assert.deepEqual(Object.keys(game), LETTERS);
+  assert.deepEqual(Object.keys(game.pieces), LETTERS);
   assert.equal(gameCells(game), BLANK);
   for (const l of LETTERS) {
-    const { at, points } = game[l];
+    const { at, points } = game.pieces[l];
     assert.equal(at, null);
     let p = points;
     for (let i = 0; i < 4; i++) {
@@ -36,41 +37,63 @@ test('the tray contains one of each real piece, with occupied handles in every o
     assert.deepEqual(points, pointsFor(l), 'no mutation of starting shapes');
   }
   // Asymmetric F distinguishes the two mirrors and the direction of rotation.
-  assert.deepEqual(indices(transformed(game.F.points, 'horizontal')), [0, 1, 11, 12, 21]);
-  assert.deepEqual(indices(transformed(game.F.points, 'vertical')), [1, 10, 11, 21, 22]);
-  assert.deepEqual(indices(transformed(game.F.points, 'rotate')), [1, 10, 11, 12, 22]);
+  assert.deepEqual(indices(transformed(game.pieces.F.points, 'horizontal')), [0, 1, 11, 12, 21]);
+  assert.deepEqual(indices(transformed(game.pieces.F.points, 'vertical')), [1, 10, 11, 21, 22]);
+  assert.deepEqual(indices(transformed(game.pieces.F.points, 'rotate')), [1, 10, 11, 12, 22]);
 });
 
-test('placements and turns are atomic, in bounds, and never overlap another piece', () => {
+test('temporary overlaps retain whole pieces; moves, turns and selections bring one to the front', () => {
   const empty = newGame();
-  let game = placePiece(empty, 'I', [5, 5]);
-  assert.equal(gameCells(game), '.'.repeat(55) + 'IIIII');
+  let game = placePiece(placePiece(empty, 'X', [0, 0]), 'I', [0, 1]);
   assert.equal(gameCells(empty), BLANK);
-  for (const at of [
-    [6, 5],
-    [5, 6],
-    [-1, 0],
-    [0, -1],
-    [0.5, 0],
-    [0, NaN],
-  ]) {
-    assert.equal(placePiece(game, 'I', at), game);
-  }
-  assert.equal(turnPiece(game, 'I', 'rotate'), game, 'no turn through the bottom edge');
-  game = placePiece(game, 'I', [0, 0]);
-  assert.ok(fits(game, 'I', [1, 0]), 'ignore only the moving piece');
-  assert.ok(!fits(game, 'X', [0, 0]));
-  game = placePiece(game, 'X', [0, 1]);
-  assert.equal(turnPiece(game, 'I', 'rotate'), game, 'no turn into an occupied square');
-  game = placePiece(game, 'X', null);
+  assert.deepEqual(game.stack, ['X', 'I']);
+  assert.equal(gameCells(game).slice(10, 15), 'IIIII');
+  game = bringForward(game, 'X');
+  assert.equal(gameCells(game).slice(10, 15), 'XXXII');
+  const under = game.pieces.X;
   game = turnPiece(game, 'I', 'rotate');
-  assert.deepEqual(
-    Array.from(gameCells(game)).flatMap((l, i) => (l === 'I' ? [i] : [])),
-    [0, 10, 20, 30, 40],
-  );
-  const returned = placePiece(game, 'I', null);
-  assert.equal(gameCells(returned), BLANK);
-  assert.deepEqual(returned.I.points, game.I.points, 'returning does not unrotate the piece');
+  assert.equal(game.pieces.X, under);
+  assert.deepEqual(game.stack, ['X', 'I']);
+  assert.deepEqual(game.pieces.I.points, transformed(pointsFor('I'), 'rotate'));
+  game = placePiece(game, 'I', null);
+  assert.deepEqual(game.pieces.I, { points: pointsFor('I'), at: null });
+  assert.equal([...gameCells(game)].filter((l) => l === 'X').length, 5);
+  assert.equal(turnPiece(game, 'I', 'rotate'), game, 'never manipulate the tray');
+  game = pickPiece(game, 'I');
+  assert.ok(game.pieces.I.at, 'choosing a tray piece puts it on the field immediately');
+  assert.equal(pickPiece(game, 'I'), game, 'choosing an on-board piece does not relocate it');
+});
+
+test('rim turns and drops slide inside, even on occupied squares', () => {
+  let game = placePiece(newGame(), 'I', [9, 5]);
+  assert.deepEqual(game.pieces.I.at, [5, 5]);
+  game = placePiece(game, 'X', [6, 3]);
+  game = turnPiece(game, 'I', 'rotate');
+  assert.deepEqual(game.pieces.I.at, [7, 1]);
+  assert.equal(gameCells(game)[47], 'I');
+  for (const turn of ['horizontal', 'vertical', 'rotate']) {
+    game = turnPiece(game, 'I', turn);
+    for (const [x, y] of game.pieces.I.points) {
+      assert.ok(game.pieces.I.at[0] + x < 10 && game.pieces.I.at[1] + y < 6);
+    }
+  }
+  for (const at of [[0.5, 0], [0, NaN], [0]]) assert.equal(placePiece(game, 'I', at), game);
+});
+
+test('putting all twelve pieces on the board is not by itself a solution', () => {
+  let game = newGame();
+  for (const l of LETTERS) game = pickPiece(game, l);
+  assert.equal(game.stack.length, 12);
+  assert.ok(gameCells(game).includes('.'));
+  assert.equal(lookupSolution(gameCells(game)), null);
+  for (const l of LETTERS) {
+    game = pickPiece(game, l);
+    assert.equal(
+      [...gameCells(game)].filter((c) => c === l).length,
+      5,
+      'even a buried piece is recoverable',
+    );
+  }
 });
 
 test('placing twelve whole pieces reconstructs official #1 without solving or renumbering it', () => {
@@ -92,8 +115,8 @@ test('placing twelve whole pieces reconstructs official #1 without solving or re
   ];
   for (const [l, sequence, x, y] of plan) {
     assert.equal(lookupSolution(gameCells(game)), null, 'partial games never identify as solves');
+    game = pickPiece(game, l);
     for (const op of sequence) game = turnPiece(game, l, actions[op]);
-    assert.ok(fits(game, l, [x, y]));
     game = placePiece(game, l, [x, y]);
   }
   const cells = gameCells(game);
@@ -102,25 +125,40 @@ test('placing twelve whole pieces reconstructs official #1 without solving or re
   assert.deepEqual(lookupSolution(cells), { number: 1, group: 'C4', name: 'Solution #1' });
 });
 
-test('tab drafts keep tray orientations and restore only legal nonoverlapping positions', () => {
-  let text = null;
+test('tab drafts round-trip overlapping layers, accept old placements and reject corrupt geometry/order', () => {
+  let text;
   const storage = {
     getItem: () => text,
-    setItem: (_key, val) => {
-      text = val;
+    setItem: (_, v) => {
+      text = v;
     },
   };
-  const game = turnPiece(placePiece(newGame(), 'X', [1, 0]), 'F', 'vertical');
+  let game = placePiece(placePiece(newGame(), 'X', [1, 0]), 'I', [0, 1]);
+  game = turnPiece(game, 'X', 'rotate');
   writeGameDraft(game, storage);
   assert.deepEqual(readGameDraft(storage), game);
-  const overlap = { ...game, I: { ...game.I, at: [0, 1] } };
-  const badShape = { ...game, T: { points: pointsFor('I'), at: null } };
-  const offBoard = { ...game, X: { ...game.X, at: [9, 5] } };
+  const legacy = {
+    ...newGame().pieces,
+    F: { points: transformed(pointsFor('F'), 'rotate'), at: [1, 1] },
+    T: { points: transformed(pointsFor('T'), 'vertical'), at: null },
+  };
+  text = JSON.stringify(legacy);
+  const migrated = readGameDraft(storage);
+  assert.deepEqual(migrated.stack, ['F']);
+  assert.deepEqual(migrated.pieces.F, legacy.F);
+  assert.deepEqual(migrated.pieces.T.points, pointsFor('T'));
+  const badPiece = (changes) => ({ ...game, pieces: { ...game.pieces, ...changes } });
   for (const bad of [
     null,
     '{',
     '{}',
-    ...[overlap, badShape, offBoard].map((v) => JSON.stringify(v)),
+    ...[
+      { ...game, stack: ['I', 'I'] },
+      { ...game, stack: ['X'] },
+      { ...game, stack: ['I', 'T'] },
+      badPiece({ T: { points: pointsFor('I'), at: null } }),
+      badPiece({ X: { ...game.pieces.X, at: [9, 5] } }),
+    ].map((v) => JSON.stringify(v)),
   ]) {
     text = bad;
     assert.deepEqual(readGameDraft(storage), newGame());

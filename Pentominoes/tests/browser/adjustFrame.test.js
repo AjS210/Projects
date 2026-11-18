@@ -14,10 +14,10 @@ test('after bulk import, move the frame to another board, resize, read and switc
   const saved = () => page.evaluate(() => localStorage.getItem('pentolog.collection.v1'));
   const read = async (index) => {
     await button('Read grid').click();
-    await page.locator('.grid-panel[aria-busy="false"]').waitFor();
+    await page.locator('.review-content[aria-busy="false"]').waitFor();
     await page.getByText(`Board ${index + 1} of ${boards.length}`, { exact: true }).waitFor();
     assert.equal(
-      (await page.locator('.grid-content .cell-letter').allTextContents()).join(''),
+      (await page.locator('.review-content .cell-letter').allTextContents()).join(''),
       boards[index],
     );
     assert.ok(await button('Choose from 4 boards').isEnabled());
@@ -36,7 +36,8 @@ test('after bulk import, move the frame to another board, resize, read and switc
     ['Solution #2182'],
   );
   await page.getByRole('link', { name: 'Workspace', exact: true }).click();
-  await button('Adjust frame').click();
+  await button('Review last upload').click();
+  await button('Adjust grid').click();
   assert.equal(await jump.inputValue(), '0');
 
   // Touch the interior, not a corner, and slide from board 1 to board 3.
@@ -55,12 +56,12 @@ test('after bulk import, move the frame to another board, resize, read and switc
   assert.equal(await jump.inputValue(), '2');
   await page.getByLabel(/Top left handle/).press('ArrowRight');
   await read(2);
-  await button('Adjust frame').click();
+  await button('Adjust grid').click();
   assert.equal(await jump.inputValue(), '2');
   await target(4).tap();
   assert.equal(await jump.inputValue(), '3');
   await read(3);
-  await button('Adjust frame').click();
+  await button('Adjust grid').click();
   await jump.selectOption('1');
   await read(1);
   assert.equal(await saved(), original, 'frame reviews must never rewrite saved solutions');

@@ -1,15 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
 import { LETTERS, PIECES, SAMPLE } from '../../src/core/puzzle.js';
 import { STORE, packRecords } from '../../src/core/collection.js';
-import { openPhone } from './site.js';
+import { openPhone, uploadBoardPhoto } from './site.js';
 
 const previousSample =
   'LLLLNNXUUI' + 'LFNNNXXXUI' + 'FFYYYYXUUI' + 'VFFTYWWZZI' + 'VTTTWWPPZI' + 'VVVTWPPPZZ';
 const fills = (cells) => Array.from(cells, (letter) => PIECES[letter].color);
 
-test('the lid defaults to a grid only; photo tools require a supplied image, including after a guide reset', async (t) => {
+test('the lid is a guide reference only; photo tools, swatches and save confirmation belong to the upload dialog', async (t) => {
   const page = await openPhone(t);
   const stored = packRecords([
     {
@@ -22,34 +21,24 @@ test('the lid defaults to a grid only; photo tools require a supplied image, inc
   await page.evaluate(([key, data]) => localStorage.setItem(key, data), [STORE, stored]);
   await page.reload();
   const button = (name) => page.getByRole('button', { name, exact: true });
-  const region = page.getByRole('region', { name: 'Solution grid' });
+  const card = page.getByRole('region', { name: 'Collection Upload' });
+  await card.waitFor();
+  assert.equal(await card.locator('svg image,.puzzle-board,.board-stage,.result-row').count(), 0);
+  assert.equal(await button('Adjust grid').count(), 0);
+  assert.equal(await button('Use camera').count(), 0);
   const readFills = (selector) =>
     page.locator(selector).evaluateAll((els) => els.map((e) => e.getAttribute('fill')));
-  const grid = async () => (await region.locator('.cell-letter').allTextContents()).join('');
-  const gridOnly = async () => {
-    await region.getByText('Solution #2182', { exact: true }).waitFor();
-    assert.ok(await region.getByText('New to you · X group B3', { exact: true }).isVisible());
-    assert.equal(await grid(), SAMPLE);
-    assert.equal(await region.locator('.scan-source, img, svg image').count(), 0);
-    assert.equal(await button('View photo').count(), 0);
-    assert.ok(await button('Adjust frame').isDisabled());
-    assert.ok(await button('Use camera').isEnabled());
-    assert.ok(await region.getByRole('button', { name: /Upload a photo/ }).isEnabled());
-    assert.deepEqual(
-      await page.evaluate(() =>
-        performance
-          .getEntriesByType('resource')
-          .map((r) => r.name)
-          .filter((url) => /\.jpe?g(?:[?#]|$)/i.test(url)),
-      ),
-      [],
-    );
-  };
-  await gridOnly();
-  assert.deepEqual(await readFills('.grid-content .cell-square'), fills(SAMPLE));
+  await button('Quick guide').tap();
+  await button('View lid solution').tap();
+  const lid = page.getByRole('dialog', { name: 'Pack-away grid' });
+  assert.equal((await lid.locator('.cell-letter').allTextContents()).join(''), SAMPLE);
+  assert.equal(await lid.locator('img,image').count(), 0);
+  await button('Done').tap();
+  const review = await uploadBoardPhoto(page);
+  await review.getByText('Solution #2182', { exact: true }).waitFor();
+  assert.deepEqual(await readFills('.review-content .cell-square'), fills(SAMPLE));
   assert.deepEqual(await readFills('.piece-tile .piece-icon rect:first-child'), fills(LETTERS));
-
-  await button('Edit grid').click();
+  await button('Edit cells').click();
   const brushes = await page
     .locator('.brush')
     .evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
@@ -59,27 +48,60 @@ test('the lid defaults to a grid only; photo tools require a supplied image, inc
   );
   await button('Clear grid').click();
   await button('Apply changes').click();
-  assert.ok(
-    await button('Adjust frame').isDisabled(),
-    'manually edited cells are not a photograph',
-  );
-
-  // Exercise the perspective reader from an actual file input, not a bundled demo.
-  await page
-    .getByLabel('Upload solution photo')
-    .setInputFiles(fileURLToPath(new URL('../fixtures/angled-board.jpg', import.meta.url)));
-  await region.getByText('angled-board.jpg', { exact: true }).waitFor();
-  await region.getByText('Solution #2182', { exact: true }).waitFor();
-  await button('Adjust frame').click();
-  await button('Read grid').click();
-  await region.getByText('Solution #2182', { exact: true }).waitFor();
-  assert.equal(await grid(), SAMPLE);
-
+  await review.getByText('Review needed', { exact: true }).waitFor();
+  assert.ok(await button('Save to collection').isDisabled());
+  await button('Adjust grid').tap();
+  await button('Read grid').tap();
+  await review.getByText('Solution #2182', { exact: true }).waitFor();
+  assert.equal((await review.locator('.cell-letter').allTextContents()).join(''), SAMPLE);
+  await button('Cancel').tap();
+  assert.equal(await card.locator('.puzzle-board').count(), 0);
   await page.getByRole('link', { name: /^Collection/ }).click();
   await button('Open solution: Solution #1252').waitFor();
   assert.deepEqual(await readFills('.entry-board .cell-square'), fills(previousSample));
-  await button('Quick guide').click();
-  await button('Load lid solution').click();
-  await gridOnly();
   assert.equal(await page.evaluate((key) => localStorage.getItem(key), STORE), stored);
+});
+
+test('a failed replacement upload never offers a stale successful reading to save', async (t) => {
+  const page = await openPhone(t);
+  const review = await uploadBoardPhoto(page);
+  await review.getByRole('button', { name: 'Cancel' }).tap();
+  await page
+    .getByLabel('Upload solution photo')
+    .setInputFiles({ name: 'broken.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([255, 216]) });
+  await review.getByRole('alert').waitFor();
+  assert.equal(await review.getByRole('button', { name: 'Save to collection' }).count(), 0);
+  assert.equal(await review.locator('.cell-letter').count(), 0);
+  await review.getByRole('button', { name: 'Cancel' }).tap();
+  assert.equal(await page.getByRole('button', { name: 'Review last upload' }).count(), 0);
+  assert.equal(await page.evaluate((key) => localStorage.getItem(key), STORE), null);
+});
+
+test('dropping an unreadable board image still opens review with adjustment, never an automatic save', async (t) => {
+  const page = await openPhone(t);
+  const card = page.getByRole('region', { name: 'Collection Upload' });
+  // A valid local image with no puzzle edges, as opposed to a failed decode.
+  await card.evaluate(async (el) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 240;
+    canvas.height = 144;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#aaa';
+    ctx.fillRect(0, 0, 240, 144);
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(new File([blob], 'table.png', { type: 'image/png' }));
+    el.dispatchEvent(new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true }));
+  });
+  const review = page.getByRole('dialog', { name: 'Review upload' });
+  await review.getByText('Review needed', { exact: true }).waitFor();
+  assert.ok(await review.getByRole('button', { name: 'Save to collection' }).isDisabled());
+  await review.getByRole('button', { name: 'Adjust grid' }).tap();
+  await page
+    .getByRole('dialog', { name: 'Adjust board frame' })
+    .getByRole('button', { name: 'Close dialog' })
+    .tap();
+  await review.getByRole('button', { name: 'Cancel' }).tap();
+  assert.equal(await card.locator('.puzzle-board').count(), 0);
+  assert.equal(await page.evaluate((key) => localStorage.getItem(key), STORE), null);
 });

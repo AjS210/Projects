@@ -1,18 +1,18 @@
 import { BLANK, COLS, LETTERS, ROWS, pointsFor } from './puzzle.js';
 
-// A piece always has its five local squares, even in the tray. Only its board
-// origin is nullable. Previewing a drag never removes it from this model.
+// The stack lists board pieces from back to front. Squares underneath another
+// piece still belong to it; the flattened view is for drawing/hit testing only.
 export function newGame() {
-  return Object.fromEntries(LETTERS.map((l) => [l, { points: pointsFor(l), at: null }]));
+  return {
+    pieces: Object.fromEntries(LETTERS.map((l) => [l, { points: pointsFor(l), at: null }])),
+    stack: [],
+  };
 }
-
-export function gameCells(game, except) {
+export function gameCells({ pieces, stack }) {
   const cells = [...BLANK];
-  for (const l of LETTERS) {
-    const { points, at } = game[l];
-    if (at && l !== except) {
-      for (const [x, y] of points) cells[(at[1] + y) * COLS + at[0] + x] = l;
-    }
+  for (const l of stack) {
+    const { at, points } = pieces[l];
+    for (const [x, y] of points) cells[(at[1] + y) * COLS + at[0] + x] = l;
   }
   return cells.join('');
 }
@@ -38,26 +38,44 @@ export function transformed(points, turn) {
   return next.map(([x, y]) => [x - left, y - top]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
 }
 
-export function fits(game, letter, at, points = game[letter].points) {
-  const [col, row] = at;
-  if (!Number.isInteger(col) || !Number.isInteger(row)) return false;
-  const occupied = gameCells(game, letter);
-  return points.every(([dx, dy]) => {
-    const x = col + dx,
-      y = row + dy;
-    return x >= 0 && x < COLS && y >= 0 && y < ROWS && occupied[y * COLS + x] === '.';
-  });
+export function sizeOf(points) {
+  return [1 + Math.max(...points.map(([x]) => x)), 1 + Math.max(...points.map(([, y]) => y))];
 }
-
-// Invalid moves/turns return the original game, never a partial placement.
+// Turning at the rim slides the whole piece just far enough to stay in reach.
+// The same projection drives the drag ghost, release and tap placement.
+export function boardOrigin(points, [x, y]) {
+  const [w, h] = sizeOf(points);
+  return [Math.max(0, Math.min(COLS - w, x)), Math.max(0, Math.min(ROWS - h, y))];
+}
+export function bringForward(game, letter) {
+  if (!game.pieces[letter].at || game.stack.at(-1) === letter) return game;
+  return { ...game, stack: [...game.stack.filter((l) => l !== letter), letter] };
+}
+function updatePiece(game, letter, piece) {
+  const stack = game.stack.filter((l) => l !== letter);
+  if (piece.at) stack.push(letter);
+  return { pieces: { ...game.pieces, [letter]: piece }, stack };
+}
 export function placePiece(game, letter, at) {
-  if (at && !fits(game, letter, at)) return game;
-  return { ...game, [letter]: { ...game[letter], at } };
+  if (at === null) return updatePiece(game, letter, { points: pointsFor(letter), at: null });
+  if (!Array.isArray(at) || at.length !== 2 || !at.every(Number.isInteger)) return game;
+  const { points } = game.pieces[letter];
+  return updatePiece(game, letter, { points, at: boardOrigin(points, at) });
 }
-
+export function pickPiece(game, letter) {
+  const { at, points } = game.pieces[letter];
+  if (at) return bringForward(game, letter);
+  const [w, h] = sizeOf(points);
+  return placePiece(game, letter, [Math.floor((COLS - w) / 2), Math.floor((ROWS - h) / 2)]);
+}
 export function turnPiece(game, letter, turn) {
-  const { points, at } = game[letter];
+  const { points, at } = game.pieces[letter];
+  if (!at) return game; // the tray is a fixed set of piece choices, not a second playing surface
   const next = transformed(points, turn);
-  if (at && !fits(game, letter, at, next)) return game;
-  return { ...game, [letter]: { points: next, at } };
+  const [gx, gy] = handleSquare(points),
+    [nx, ny] = handleSquare(next);
+  return updatePiece(game, letter, {
+    points: next,
+    at: boardOrigin(next, [at[0] + gx - nx, at[1] + gy - ny]),
+  });
 }

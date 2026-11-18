@@ -461,11 +461,6 @@ p {
   color: var(--quiet);
   margin-left: auto;
 }
-.photo-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
 .btn,
 .text-btn,
 .icon-button {
@@ -531,12 +526,95 @@ p {
   background: var(--accent-well);
   color: var(--accent-hover);
 }
-.grid-panel {
-  display: flex;
-  flex-direction: column;
+.upload-body {
+  padding: 0 clamp(14px, 2vw, 20px) 13px;
 }
-.grid-content {
-  padding: 0 20px;
+.upload-body > p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 64ch;
+}
+.upload-body .upload-zone {
+  min-height: 90px;
+  margin: 12px 0 0;
+}
+.last-upload,
+.review-boards,
+.reading-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.last-upload {
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  margin-top: 12px;
+}
+.last-upload > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.last-upload button {
+  flex: none;
+}
+.review-boards {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.reading-progress {
+  justify-content: flex-start;
+  padding: 12px 0;
+  color: var(--muted);
+}
+.review-dismiss {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.review-content .board-stage {
+  height: auto;
+  aspect-ratio: 1.65;
+  max-height: 54svh;
+  padding: 6px;
+}
+.review-content .grid-toolbar {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 3px 7px;
+  padding-block: 4px;
+}
+.review-content .grid-facts {
+  margin-right: auto;
+}
+.review-tools {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.review-tools .btn {
+  min-height: 44px;
+}
+@media (max-width: 480px) {
+  .upload-body .filetypes {
+    display: none;
+  }
+  .review-content .grid-facts {
+    flex-basis: 100%;
+    padding: 4px 0;
+  }
+  .review-tools .btn {
+    flex: 1;
+  }
+}
+.review-content .result-row {
+  border-radius: 8px;
+  margin-top: 12px;
 }
 .scan-source {
   display: flex;
@@ -605,12 +683,6 @@ p {
 .scan-reference .palette-list {
   margin-bottom: 12px;
 }
-.grid-content .photo-actions {
-  margin-bottom: 16px;
-}
-.photo-actions .btn {
-  min-height: 44px;
-}
 
 .board-stage,
 .entry-board,
@@ -637,12 +709,6 @@ p {
   width: 100%;
   max-width: 100%;
   overflow: visible;
-}
-@media (min-width: 761px) {
-  .grid-content .board-stage {
-    height: calc(var(--media-h) + 20px);
-    padding: 7px 10px 5px;
-  }
 }
 .axis-labels {
   font-family: var(--mono);
@@ -695,11 +761,6 @@ p {
 .piece-count.valid,
 .editor-validation.valid {
   color: var(--good);
-}
-.edit-button {
-  font-size: 12px;
-  color: var(--muted);
-  padding: 5px 2px 5px 6px;
 }
 .result-row {
   border-top: 1px solid var(--line);
@@ -1196,37 +1257,6 @@ textarea::placeholder,
   margin-left: auto;
   flex: none;
 }
-.camera-surface {
-  background: var(--well);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 1.7;
-}
-.camera-surface video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.camera-message {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  text-align: center;
-  color: var(--accent);
-}
-.camera-message p {
-  max-width: 330px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-}
 .brush-palette {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -1602,9 +1632,6 @@ textarea::placeholder,
   .panel-heading {
     padding: 16px 16px 13px;
   }
-  .grid-content {
-    padding: 0 16px;
-  }
   .result-row {
     padding: 14px 16px;
     gap: 8px;
@@ -1888,10 +1915,6 @@ textarea::placeholder,
   .entry-board .puzzle-board {
     height: auto;
   }
-  .grid-content .board-stage {
-    aspect-ratio: 1.59;
-    padding: 6px;
-  }
   .editor-stage,
   .detail-stage {
     aspect-ratio: 1.64;
@@ -2028,9 +2051,6 @@ textarea::placeholder,
   }
   .grid-facts {
     gap: 7px;
-  }
-  .photo-actions .btn {
-    font-size: 11.5px;
   }
   .palette-list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2172,9 +2192,6 @@ textarea::placeholder,
   color: var(--text);
   overflow-wrap: anywhere;
   line-height: 1.4;
-}
-.board-switch {
-  margin: 0 0 9px;
 }
 .found-boards {
   display: grid;

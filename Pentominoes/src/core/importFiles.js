@@ -69,7 +69,7 @@ export async function readImportFile(file, signal) {
     const result = await scanPhoto(photo, null, signal);
     if (result.found !== 12)
       throw new Error(
-        'No complete board could be verified in this image. Crop to a whole board, or use Workspace → Upload a photo → Adjust frame to review it.',
+        'No complete board could be verified in this image. Crop to a whole board, or use Collection Upload → Upload a photo → Adjust grid to review it.',
       );
     const title = file.name.replace(/\.[^.]+$/, '').slice(0, 55) || 'Photo';
     return {

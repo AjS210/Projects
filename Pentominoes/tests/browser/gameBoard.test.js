@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openPhone } from './site.js';
+import { openPhone, uploadBoardPhoto } from './site.js';
 import { STORE } from '../../src/core/collection.js';
 import { DRAFT_KEY } from '../../src/core/gameDraft.js';
 import { BLANK, SAMPLE, asTable, variants } from '../../src/core/puzzle.js';
@@ -12,10 +12,12 @@ const center = async (loc) => {
 };
 const tools = (page) => {
   const game = page.getByRole('region', { name: 'Game board', exact: true });
-  const grid = page.getByRole('region', { name: 'Solution grid', exact: true });
+  const upload = page.getByRole('region', { name: 'Collection Upload', exact: true });
+  const review = page.getByRole('dialog', { name: 'Review upload' });
   return {
     game,
-    grid,
+    upload,
+    review,
     tile: (l) => game.getByRole('button', { name: new RegExp(`^${l} piece,`) }),
     cell: (i) => game.locator(`[data-square="${i}"]`),
     read: () =>
@@ -23,15 +25,15 @@ const tools = (page) => {
         .locator('[data-square]')
         .evaluateAll((els) => els.map((el) => el.dataset.piece).join('')),
     saved: () => page.evaluate((key) => localStorage.getItem(key), STORE),
-    scan: async () => (await grid.locator('.cell-letter').allTextContents()).join(''),
+    scan: async () => (await review.locator('.cell-letter').allTextContents()).join(''),
     action: (name) => game.getByRole('button', { name, exact: true }),
   };
 };
 
-test('finger and mouse drags snap the whole piece, keep the grabbed square, reject collisions and cancel safely', async (t) => {
+test('finger and mouse drags keep the grabbed square, allow overlaps and turn at the rim', async (t) => {
   const page = await openPhone(t);
   page.setDefaultTimeout(6000);
-  const { game, tile, cell, read, scan, saved, action } = tools(page);
+  const { game, tile, cell, read, saved, action } = tools(page);
   await game.scrollIntoViewIfNeeded();
   const touch = await page.context().newCDPSession(page);
   const send = (type, points = []) =>
@@ -55,15 +57,24 @@ test('finger and mouse drags snap the whole piece, keep the grabbed square, reje
   assert.deepEqual(indices(await read(), 'X'), [2, 11, 12, 13, 22]);
   await drag(cell(2), cell(5)); // move the north arm, not the center
   assert.deepEqual(indices(await read(), 'X'), [5, 14, 15, 16, 25]);
+  // The I goes across the X, without losing any of its five squares underneath.
+  await drag(tile('I'), cell(15), () => page.getByText('Release to place I.').waitFor());
+  assert.deepEqual(indices(await read(), 'I'), [13, 14, 15, 16, 17]);
+  assert.deepEqual(indices(await read(), 'X'), [5, 25]);
+  await cell(5).tap();
+  assert.deepEqual(indices(await read(), 'X'), [5, 14, 15, 16, 25]);
+  assert.equal(await game.locator('.field-piece').last().getAttribute('data-letter'), 'X');
   const original = await read();
-  for (const to of [cell(15), cell(9)]) {
-    // through the cross; through the rim
-    await drag(tile('I'), to, () => page.locator('.drag-ghost.blocked').waitFor());
-    assert.equal(await read(), original);
-  }
-  await drag(cell(14), cell(31), () => page.getByText('Release to place X.').waitFor(), true);
-  assert.equal(await read(), original, 'system gesture cancellation keeps the old placement');
+  await drag(cell(14), cell(31), () => page.getByText(/Release to place X/).waitFor(), true);
+  assert.equal(await read(), original, 'cancelling does not move the piece');
   await drag(cell(15), tile('X'));
+  assert.deepEqual(
+    indices(await read(), 'I'),
+    [13, 14, 15, 16, 17],
+    'removing the top restores what it covered',
+  );
+  await tile('I').tap();
+  await action('Return to tray').tap();
   assert.equal(await read(), BLANK);
   // Mouse and touch use the same geometry even after a viewport change.
   await page.setViewportSize({ width: 1280, height: 920 });
@@ -77,11 +88,17 @@ test('finger and mouse drags snap the whole piece, keep the grabbed square, reje
   const floor = await read();
   assert.deepEqual(indices(floor, 'I'), [50, 51, 52, 53, 54]);
   await action('Rotate 90°').click();
-  await game.getByText(/Not enough room to turn I/).waitFor();
-  assert.equal(await read(), floor);
+  assert.deepEqual(
+    indices(await read(), 'I'),
+    [12, 22, 32, 42, 52],
+    'turns at the rim slide into the board',
+  );
   await action('Return to tray').click();
   assert.equal(await read(), BLANK);
+  const art = () => tile('F').locator('svg:not(.tray-check)').innerHTML();
+  const thumbnail = await art();
   await tile('F').click();
+  assert.equal(indices(await read(), 'F').length, 5, 'tap adds it to the board immediately');
   await cell(22).click();
   assert.deepEqual(indices(await read(), 'F'), [12, 13, 21, 22, 32]);
   await action('Flip horizontal').click();
@@ -90,14 +107,14 @@ test('finger and mouse drags snap the whole piece, keep the grabbed square, reje
   assert.deepEqual(indices(await read(), 'F'), [12, 22, 23, 31, 32]);
   await action('Rotate 90°').click();
   assert.deepEqual(indices(await read(), 'F'), [11, 21, 22, 23, 32]);
-  assert.equal(await scan(), SAMPLE);
+  assert.equal(await art(), thumbnail, 'transform buttons never rotate the option card');
   assert.equal(await saved(), null);
 });
 
-test('a phone playthrough saves the played grid, not the default grid, and shares catalogue deduplication', async (t) => {
+test('a numbered playthrough and an independently reviewed upload share catalogue deduplication', async (t) => {
   const page = await openPhone(t);
   page.setDefaultTimeout(6500);
-  const { game, grid, tile, cell, read, scan, saved, action } = tools(page);
+  const { game, upload, tile, cell, read, scan, saved, action } = tools(page);
   const first = 'FFIIIIILZZVFFYLLLLZNVFYYYYXZZNVVVTWXXXNNPPPTWWXUNUPPTTTWWUUU';
   const labels = { H: 'Flip horizontal', V: 'Flip vertical', R: 'Rotate 90°' };
   // Actions are in screen space; coordinates below are the *marked squares*,
@@ -135,7 +152,7 @@ test('a phone playthrough saves the played grid, not the default grid, and share
   await game.getByText('Solution #1', { exact: true }).waitFor();
   await game.getByText('New to you · X group C4').waitFor();
   assert.equal(await read(), first);
-  assert.equal(await scan(), SAMPLE);
+  assert.equal(await upload.locator('.puzzle-board').count(), 0);
   assert.equal(await saved(), null, 'finishing is not an automatic save');
   await action('Save solution').tap();
   const save = page.getByRole('dialog', { name: 'Save Solution #1', exact: true });
@@ -155,13 +172,15 @@ test('a phone playthrough saves the played grid, not the default grid, and share
   await detail.getByText('X group C4', { exact: true }).waitFor();
   await detail.getByRole('button', { name: 'Close dialog' }).tap();
   // A mirrored copy in the independent photo/letter editor is already saved.
-  await grid.getByRole('button', { name: 'Edit grid' }).tap();
+  const review = await uploadBoardPhoto(page);
+  await review.getByRole('button', { name: 'Edit cells' }).tap();
   const editor = page.getByRole('dialog', { name: 'Edit solution grid' });
   await editor.getByRole('button', { name: 'Paste a grid from Sheets' }).tap();
   await editor.getByRole('textbox', { name: 'Grid letters' }).fill(asTable(variants(first)[1]));
   await editor.getByRole('button', { name: 'Use pasted grid' }).tap();
   await editor.getByRole('button', { name: 'Apply changes' }).tap();
-  await grid.getByText(/Already saved · X group C4 · Left–right mirror/).waitFor();
+  await review.getByText(/Already saved · X group C4 · Left–right mirror/).waitFor();
+  await review.getByRole('button', { name: 'Cancel' }).tap();
   assert.equal(await read(), first);
   await action('Start over').tap();
   await page.getByRole('button', { name: 'Keep playing' }).tap();
@@ -169,65 +188,101 @@ test('a phone playthrough saves the played grid, not the default grid, and share
   await action('Start over').tap();
   await page.getByRole('button', { name: 'Start new game' }).tap();
   assert.equal(await read(), BLANK);
+  await upload.getByRole('button', { name: 'Review last upload' }).tap();
   assert.equal(await scan(), variants(first)[1]);
   assert.equal(await saved(), backup, 'reset touches neither the archive nor the photo grid');
 });
 
-test('all photo controls live in Solution grid and reading a multi-board photo leaves the game alone', async (t) => {
+test('the upload card opens one chooser; multi-board review, adjustment and cancellation leave play and saves alone', async (t) => {
   const page = await openPhone(t);
-  page.setDefaultTimeout(6500);
-  const { game, grid, tile, cell, read, scan, saved } = tools(page);
-  for (const name of [/Upload a photo or screenshot/, /^Use camera$/]) {
-    assert.equal(await game.getByRole('button', { name }).count(), 0);
-    assert.ok(await grid.getByRole('button', { name }).isEnabled());
-  }
-  assert.equal(await game.getByRole('button', { name: 'Adjust frame' }).count(), 0);
-  assert.ok(await grid.getByRole('button', { name: 'Adjust frame' }).isDisabled());
+  const { game, upload, review, tile, cell, read, scan, saved } = tools(page);
+  const button = (name) => page.getByRole('button', { name, exact: true });
+  assert.equal(await upload.getByRole('button').count(), 1);
+  assert.equal(await upload.locator('.puzzle-board, .cell-letter').count(), 0);
+  assert.equal(
+    await page.getByRole('button', { name: /Use camera|Adjust (frame|grid)/i }).count(),
+    0,
+  );
   await tile('T').tap();
   await cell(22).tap();
   const before = await read();
   await page.reload();
   await game.waitFor();
-  assert.equal(await read(), before, 'same-tab refresh resumes the puzzle but never adds a solve');
+  assert.equal(await read(), before);
   const chooser = page.waitForEvent('filechooser');
-  await grid.getByRole('button', { name: /Upload a photo or screenshot/ }).tap();
-  await (
-    await chooser
-  ).setFiles({
+  await upload.getByRole('button', { name: /Upload a photo or screenshot/ }).tap();
+  const picker = await chooser;
+  assert.equal(
+    await picker.element().getAttribute('capture'),
+    null,
+    'does not force only the camera',
+  );
+  assert.match(await picker.element().getAttribute('accept'), /image\/\*/);
+  await picker.setFiles({
     name: 'four-boards.jpg',
     mimeType: 'image/jpeg',
     buffer: Buffer.from(sheetJpg({ right: true })),
   });
-  const picker = page.getByRole('dialog', { name: '4 boards found' });
-  await picker.getByRole('button', { name: 'Review board 3', exact: true }).tap();
-  await grid.getByText('Board 3 of 4', { exact: true }).waitFor();
+  await review.getByRole('button', { name: 'Choose from 4 boards' }).tap();
+  await button('Review board 3').tap();
+  await review.getByText('Board 3 of 4', { exact: true }).waitFor();
   assert.equal(await scan(), boards[2]);
-  await grid.getByRole('button', { name: 'View photo' }).tap();
+  await review.getByRole('button', { name: 'View photo' }).tap();
   await page
     .getByRole('dialog', { name: 'Your board photo' })
-    .getByRole('button', { name: 'Adjust frame' })
+    .getByRole('button', { name: 'Adjust grid' })
     .tap();
-  await page.getByRole('button', { name: 'Read grid', exact: true }).tap();
-  await grid.locator('.result-unique').waitFor();
+  await button('Read grid').tap();
+  await review.locator('.result-unique').waitFor();
   assert.equal(await scan(), boards[2]);
   assert.notEqual(boards[2], SAMPLE);
-  await page.getByRole('button', { name: 'Quick guide' }).tap();
-  await page.getByRole('button', { name: 'Load lid solution' }).tap();
-  await grid.locator('.scan-source').waitFor({ state: 'detached' });
-  assert.equal(await scan(), SAMPLE);
-  assert.equal(await grid.getByRole('button', { name: /Choose from/ }).count(), 0);
-  assert.ok(await grid.getByRole('button', { name: 'Adjust frame' }).isDisabled());
+  await button('Cancel').tap();
+  await review.waitFor({ state: 'detached' });
   assert.equal(await read(), before);
+  assert.equal(await saved(), null);
+  assert.equal(
+    await upload.locator('.puzzle-board').count(),
+    0,
+    'closing review never puts a grid back on the card',
+  );
+  await button('Review last upload').tap();
+  await button('Choose from 4 boards').tap();
+  await button('Import all 4').tap();
+  await page.getByText('1 solution added · 3 duplicates skipped.').waitFor();
+  assert.equal(await read(), before);
+});
+
+test('a fully covered piece can be raised by its card; an overlapping draft resumes but cannot be saved', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, read, action, saved } = tools(page);
+  for (const l of 'FILNPTUVWXYZ') await tile(l).tap();
+  await game.getByText('12 / 12 placed', { exact: true }).waitFor();
+  assert.ok((await read()).includes('.'));
+  assert.equal(await action('Save solution').count(), 0);
+  const gameRead = await read();
+  const buried = [...'FILNPTUVWXYZ'].find((l) => !gameRead.includes(l));
+  assert.ok(buried);
+  await tile(buried).tap();
+  await action('Flip horizontal').tap();
+  await action('Flip vertical').tap();
+  await action('Rotate 90°').tap();
+  const front = await read();
+  assert.equal([...front].filter((l) => l === buried).length, 5);
+  assert.equal(await game.locator('.field-piece').last().getAttribute('data-letter'), buried);
+  await page.reload();
+  await game.waitFor();
+  assert.equal(await read(), front);
+  assert.equal(await action('Save solution').count(), 0);
   assert.equal(await saved(), null);
 });
 
-test('rotating a phone puts the tray beside the field and the scanner below, without restarting play', async (t) => {
+test('rotating a phone puts the 3 × 4 tray beside a larger field and the upload card below, without restarting play', async (t) => {
   const page = await openPhone(t);
   page.setDefaultTimeout(6500);
   const { game, tile, cell, read, saved, action } = tools(page);
   const boxes = (view = page) =>
     Promise.all(
-      ['.game-panel', '.grid-panel', '.game-plane', '.game-tray'].map((s) =>
+      ['.game-panel', '.upload-panel', '.game-plane', '.game-tray'].map((s) =>
         view.locator(s).boundingBox(),
       ),
     );
@@ -279,6 +334,21 @@ test('rotating a phone puts the tray beside the field and the scanner below, wit
       board.y >= 0 && board.y + board.height <= height + 1,
       'whole board visible together with controls',
     );
+    const tiles = await game
+      .locator('.game-tray button')
+      .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().toJSON()));
+    assert.equal(
+      new Set(tiles.map((t) => t.y)).size,
+      3,
+      `${width}: three rows, even with short browser chrome`,
+    );
+    assert.equal(new Set(tiles.map((t) => t.x)).size, 4, `${width}: four columns`);
+    if (width === 854) assert.ok(board.width >= 540, 'more room than the previous 456px field');
+    if (width === 915 && height === 300)
+      assert.ok(
+        board.width >= 440,
+        'short landscape no longer sacrifices the field to a six-wide tray',
+      );
     const targets = await game
       .locator('.tray-piece, .game-transforms button')
       .evaluateAll((nodes) => nodes.map((el) => el.getBoundingClientRect().toJSON()));
