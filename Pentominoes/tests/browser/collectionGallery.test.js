@@ -42,11 +42,12 @@ test('phone collection fits three tappable boards per row and keeps captions in 
   }
 
   await page.getByRole('textbox', { name: 'Search solutions' }).fill('solve 3');
-  const chosen = page.getByRole('button', { name: 'Open solution: My solve 3', exact: true });
+  const chosen = page.getByRole('button', { name: 'Open solution: Solution #1347', exact: true });
   await chosen.waitFor();
   assert.equal(await cards.count(), 1);
   await chosen.tap();
-  const detail = page.getByRole('dialog', { name: 'My solve 3', exact: true });
+  const detail = page.getByRole('dialog', { name: 'Solution #1347', exact: true });
+  await detail.getByText('Earlier name: My solve 3', { exact: true }).waitFor();
   const date = await page.evaluate(formatDate, createdAt);
   await detail.getByText(`Saved ${date} on this device.`, { exact: true }).waitFor();
   assert.equal((await detail.locator('.cell-letter').allTextContents()).join(''), grids[2]);

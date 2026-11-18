@@ -31,7 +31,10 @@ test('after bulk import, move the frame to another board, resize, read and switc
   await page.getByText('4 verified boards found', { exact: true }).waitFor();
   await button('Import solutions').click();
   const original = await saved();
-  assert.ok(JSON.parse(original).solutions.length > 0);
+  assert.deepEqual(
+    JSON.parse(original).solutions.map((r) => r.name),
+    ['Solution #2182'],
+  );
   await page.getByRole('link', { name: 'Workspace', exact: true }).click();
   await button('Adjust frame').click();
   assert.equal(await jump.inputValue(), '0');

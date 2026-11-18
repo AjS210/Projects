@@ -6,7 +6,7 @@ import { readWorkbook } from '../src/core/workbook.js';
 import { columnName, SheetGrid, extractSheetBoards } from '../src/core/sheetGrid.js';
 import { exportLink, readGridText, readImportFile } from '../src/core/importFiles.js';
 import { LETTERS, SAMPLE, variants, canonicalKey } from '../src/core/puzzle.js';
-import { mergeRecords } from '../src/core/collection.js';
+import { mergeRecords } from './fixtures/catalogue.js';
 import { imageFileType } from '../src/core/photo.js';
 
 const OTHER = 'IVVVTTTPPPIVUUUTWWPPIVUZUTFWWLIZZZFFFXWLIZYNNFXXXLYYYYNNNXLL';
@@ -83,7 +83,15 @@ test('reads multi-tab XLSX, shared and inline letters, style-only fills and impl
     result.map((r) => r.name),
     ['Tab 1 · B5:K10', 'Tab 1 · M5:V10', 'Tab 1 · B14:K19', 'Tab 2 · AA3:AJ8'],
   );
-  assert.equal(mergeRecords([], result).added, 2);
+  const merged = mergeRecords([], result);
+  assert.equal(merged.added, 2);
+  assert.deepEqual(
+    merged.records.map((r) => [r.name, r.previousName]),
+    [
+      ['Solution #1347', 'Tab 1 · M5:V10'],
+      ['Solution #2182', 'Tab 1 · B5:K10'],
+    ],
+  );
 });
 test('reads ODS cell styles and repeats without expanding empty trailing rows', async () => {
   const ns = 'urn:oasis:names:tc:opendocument:xmlns:';

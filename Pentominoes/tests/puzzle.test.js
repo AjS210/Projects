@@ -13,7 +13,8 @@ import {
   validateBoard,
   variants,
 } from '../src/core/puzzle.js';
-import { mergeRecords, packRecords, parseImport, unpackRecords } from '../src/core/collection.js';
+import { packRecords, parseImport, unpackRecords } from '../src/core/collection.js';
+import { mergeRecords } from './fixtures/catalogue.js';
 
 const OTHER = 'IVVVTTTPPPIVUUUTWWPPIVUZUTFWWLIZZZFFFXWLIZYNNFXXXLYYYYNNNXLL';
 
@@ -91,12 +92,16 @@ test('import merges without replacing stored grids or duplicating a reflected en
   assert.equal(next.records.length, 2);
   assert.equal(next.added, 1);
   assert.equal(next.skipped, 5);
-  assert.equal(next.records[1].name, 'Sunday puzzle');
+  assert.equal(next.records[1].name, 'Solution #2182');
+  assert.equal(next.records[1].previousName, 'Sunday puzzle');
 });
 test('backups round-trip names and grids; malformed backups cannot be merged', () => {
   const { records } = mergeRecords([], [{ cells: SAMPLE, name: 'First solve' }]);
-  assert.deepEqual(unpackRecords(packRecords(records)), records);
-  assert.deepEqual(parseImport(packRecords(records)), records);
+  const [{ reference, ...personal }] = records;
+  assert.deepEqual(unpackRecords(packRecords(records)), [personal]);
+  assert.deepEqual(parseImport(packRecords(records)), [personal]);
+  assert.equal(reference.name, personal.name);
+  assert.equal(personal.previousName, 'First solve');
   assert.throws(() => parseImport('{"version":1,"solutions":[{"cells":"no"}]}'), /not a valid/);
   assert.throws(() => parseImport('{"version":2}'), /not a PentoLog/);
 });
