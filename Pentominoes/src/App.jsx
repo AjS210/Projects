@@ -233,7 +233,17 @@ export default function App() {
             <BrandMark />
             <span>PentoLog</span>
           </a>
-          <span className="nav-divider" />
+          <div className="header-end">
+            <span className="local-status">
+              <i />
+              Local workspace
+            </span>
+            <button className="guide-button" onClick={() => setModal('guide')}>
+              <CircleHelp size={16} />
+              <span>Quick guide</span>
+            </button>
+          </div>
+          <span className="nav-divider" aria-hidden="true" />
           <nav className="primary-nav" aria-label="Main navigation">
             <a
               href="#workspace"
@@ -255,16 +265,6 @@ export default function App() {
               )}
             </a>
           </nav>
-          <div className="header-end">
-            <span className="local-status">
-              <i />
-              Local workspace
-            </span>
-            <button className="guide-button" onClick={() => setModal('guide')}>
-              <CircleHelp size={16} />
-              <span>Quick guide</span>
-            </button>
-          </div>
         </div>
       </header>
       <main className={`shell main-content ${tab}`} id="main" tabIndex="-1">
