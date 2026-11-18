@@ -2,7 +2,7 @@
 
 | Project | What it contains |
 | --- | --- |
-| [Pentominoes — PentoLog](./Pentominoes/) | A web app for scanning, importing, and tracking 6 × 10 pentomino solutions. Source, tests, and build instructions are in this folder. |
+| [Pentominoes — PentoLog](./Pentominoes/) | Play a 6 × 10 pentomino game, scan or import boards, and track your numbered solutions. Source, tests, and build instructions are in this folder. |
 | [Emul8or](./Emul8or/) | An Android handheld-emulator project in the planning stage. Its research, roadmap, setup script, and license are in this folder. |
 
 ## Open PentoLog

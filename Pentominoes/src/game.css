@@ -1,0 +1,306 @@
+/* The playing field is always ten square cells wide. The transparent native
+   buttons and the drawn pieces share the same rectangle at every phone zoom. */
+.game-panel {
+  min-width: 0;
+  container-type: inline-size;
+}
+.game-content {
+  padding: 0 20px 16px;
+}
+.game-meta,
+.tray-heading,
+.game-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.game-meta {
+  margin: 0 1px 8px;
+  font: 10px var(--mono);
+  color: var(--quiet);
+}
+.game-meta > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: 0.08em;
+}
+.game-meta i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.game-meta > span:last-child {
+  color: var(--text);
+}
+.game-meta > .complete:last-child {
+  color: var(--good);
+}
+.game-frame {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  grid-template-rows: 17px auto;
+  padding: 3px 9px 9px 3px;
+  background: #222b2e;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  box-shadow:
+    inset 0 1px 0 #ffffff0d,
+    0 2px 4px #0003;
+}
+.col-ruler,
+.row-ruler {
+  display: grid;
+  place-items: center;
+  font: 9px var(--mono);
+  color: var(--muted);
+}
+.col-ruler {
+  grid-template-columns: repeat(10, 1fr);
+}
+.row-ruler {
+  grid-template-rows: repeat(6, 1fr);
+}
+.ruler-cross {
+  color: var(--accent);
+  font: 11px var(--mono);
+  text-align: center;
+}
+.game-plane {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 10 / 6;
+  outline: 1px solid var(--line-strong);
+  background: linear-gradient(155deg, #172021, #111718);
+  box-shadow: inset 0 2px 5px #0005;
+}
+.field-art,
+.field-targets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.field-prompt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+}
+.field-prompt span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px #0004;
+}
+.field-prompt svg {
+  color: var(--accent);
+}
+.field-art {
+  pointer-events: none;
+}
+.field-targets {
+  display: grid;
+  grid-template: repeat(6, minmax(0, 1fr)) / repeat(10, minmax(0, 1fr));
+}
+.field-targets button {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+}
+.field-targets button:focus-visible {
+  outline-offset: -3px;
+  z-index: 1;
+  outline: 2px dashed white;
+  box-shadow: inset 0 0 0 3px #232725;
+}
+.field-targets button:not([data-piece='.']),
+.tray-piece {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.field-targets button:not([data-piece='.']):active,
+.tray-piece:active {
+  cursor: grabbing;
+}
+@media (hover: hover) {
+  .field-targets button:hover {
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+}
+.piece-monogram {
+  font: 500 3.7px var(--mono);
+  pointer-events: none;
+}
+.field-piece .piece-outline,
+.drag-ghost .piece-outline {
+  stroke-width: 0.42;
+}
+.field-piece.selected .piece-outline {
+  stroke: var(--accent-hover);
+  stroke-opacity: 1;
+  stroke-dasharray: 1.25 0.65;
+}
+.game-drag-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  overflow: hidden;
+}
+.drag-ghost {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.88;
+  overflow: visible;
+  filter: drop-shadow(0 3px 4px #000a);
+}
+.drag-ghost .piece-outline {
+  stroke: white;
+  stroke-opacity: 1;
+}
+.drag-ghost.blocked {
+  opacity: 0.8;
+}
+.drag-ghost.blocked rect {
+  fill: #713d38;
+  stroke: var(--danger);
+}
+.drag-ghost.blocked text {
+  fill: white;
+}
+.drag-ghost.blocked .piece-outline {
+  stroke: var(--danger);
+  stroke-dasharray: 1 0.6;
+}
+.game-transforms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 11px 0 12px;
+}
+.game-transforms .btn {
+  min-height: 44px;
+  padding: 6px 3px;
+  font-size: 12px;
+}
+.game-transforms .btn svg {
+  color: var(--accent);
+}
+.tray-heading {
+  border-top: 1px solid var(--line);
+  min-height: 40px;
+}
+.tray-heading h3 {
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+.tray-heading .text-btn,
+.game-foot .text-btn {
+  padding: 5px 1px;
+  min-height: 40px;
+  white-space: nowrap;
+  font-size: 11.5px;
+}
+.game-tray {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  border-radius: 6px;
+}
+.game-tray.over-tray {
+  outline: 1px dashed var(--accent);
+  outline-offset: 3px;
+}
+.tray-piece {
+  display: grid;
+  place-items: center;
+  position: relative;
+  min-width: 0;
+  height: 53px;
+  padding: 0;
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.tray-piece > svg:not(.tray-check) {
+  width: min(90%, 43px);
+  height: 43px;
+}
+.tray-name {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  color: var(--muted);
+  font: 10px var(--mono);
+}
+.tray-piece:hover {
+  background: var(--raised);
+  border-color: var(--line-strong);
+}
+.tray-piece[aria-pressed='true'] {
+  background: var(--accent-well);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-edge);
+}
+.tray-piece[aria-pressed='true'] .tray-name {
+  color: var(--accent-hover);
+}
+.tray-piece.on-board > svg:not(.tray-check) {
+  opacity: 0.35;
+}
+.tray-check {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  color: var(--good);
+}
+.game-foot {
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  min-height: 50px;
+}
+.game-foot p {
+  max-width: 47ch;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+@container (max-width: 465px) {
+  .game-content {
+    padding: 0 15px 12px;
+  }
+  .game-transforms .btn {
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.25;
+    font-size: 11px;
+  }
+  .tray-piece {
+    height: 49px;
+  }
+  .game-foot p {
+    font-size: 11.5px;
+  }
+}
+@container (max-width: 319px) {
+  .game-tray {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .game-meta {
+    font-size: 9px;
+  }
+}

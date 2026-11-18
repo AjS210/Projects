@@ -1,14 +1,24 @@
 # PentoLog
 
-A browser-based notebook for **6 × 10 pentomino solutions**. Photograph a completed board, review its letter grid, and save it only if it is new. A reflection or a 180° turn of a saved board is not a new solution.
+A browser-based notebook for **6 × 10 pentomino solutions**. Play with all twelve pieces on screen, or photograph a physical board and review its letter grid. Save a verified solve by its catalogue number. A reflection or a 180° turn of a saved board is not a new solution.
 
 ## Try it
 
-[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos and piece swatches keep their original colors. It opens with the **lid solution**: the pack-away arrangement shown on the product lid, with the red U at the upper left and the white I along the front edge. The [tabletop sample image](./public/assets/lid-solution.jpg) and letter grid show the same arrangement. **Quick guide → Load lid solution** brings it back without adding to or changing your saved collection.
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos and piece swatches keep their original colors. **Game board** opens with a tray of twelve pieces and an empty playing field (or your current game in this tab). **Solution grid** is a separate photo scanner. Its [lid sample](./public/assets/lid-solution.jpg) shows the pack-away arrangement, with the red U at the upper left and the white I along the front edge. **Quick guide → Load lid solution** brings that reference back without changing the game or collection.
+
+### Play a board
+
+- Drag a piece with a finger, pen or mouse. Its preview snaps to the 6 × 10 grid. A dashed red preview means it crosses the frame or another piece; releasing there leaves the board unchanged. Grab any occupied square to move its **whole** piece.
+- Select a piece in the tray or on the board. **Flip horizontal** swaps left and right, **Flip vertical** swaps top and bottom, and **Rotate 90°** turns it clockwise. A placed piece turns at the top-left of its bounding box if there is room. **Return to tray** (or dropping back onto the tray) lets you turn it in free space.
+- Without dragging, select a piece and tap an empty square. The marked cell in its thumbnail lands on that square. With a keyboard, activate a tray piece, arrow between board squares, and press **Enter** or **Space** to place it.
+- When all 60 squares are covered, the game shows the Isomer solution number and X group. Choose **Save solution** or **View entry** if you already have it. Finishing or starting over never automatically writes to your collection.
+- Playing and scanning are independent. A tab-local session draft keeps your current pieces while you browse the collection or refresh the same tab when browser storage is available. Choose **Start over → Start new game** to empty the board. Only confirmed collection entries go into backups.
+
+### Scan, import and collect
 
 1. **Bring in earlier solves.** Open **Collection → Import grids → File or photo**. Choose an `.xlsx` or `.ods` workbook, a JPG/PNG screenshot, a CSV/TSV file, or a PentoLog JSON backup. Review the number of verified boards, then select **Import solutions**. **Paste or link** also accepts copied ranges or a Sheets link. Side-by-side, stacked and portrait boards are supported; duplicate or mirrored entries are not added again.
-2. **Capture a board.** Choose **Upload a photo**, drop an image onto the photo panel, or use **Use camera**. Include the whole puzzle in even light. On mobile, the camera action requests the device camera; on desktop it asks for a live camera preview. Camera access requires HTTPS or localhost and browser permission. File upload works without camera access.
-3. **Review the reading.** The scanner fills a colored letter grid.
+2. **Capture a board.** In **Solution grid**, choose **Upload a photo or screenshot**, drop the file onto that card, or choose **Use camera**. Include the whole puzzle in even light. On mobile, the camera action requests the device camera; on desktop it asks for a live camera preview. Camera access requires HTTPS or localhost and browser permission. File upload works without camera access.
+3. **Review the reading.** The scanner fills a colored letter grid. **View photo** opens its source image; expanding **Piece reference** lets you highlight individual shapes.
    - In **Adjust frame**, drag **inside** the frame to move it without resizing. On a multi-board photo, use **Jump to board** or tap another outlined grid.
    - Drag a **corner** to resize. Both handles on a side move together; the opposite corner stays fixed. Arrow keys fine-tune the focused frame or corner (hold Shift for larger steps). **Straighten edges** is available for tilted frames.
    - **Read grid** scans the highlighted region and keeps the other detected boards available. **Reset frame** undoes adjustments to the chosen frame. Closing without reading discards the draft.
@@ -28,7 +38,7 @@ The [source index](https://isomerdesign.com/Pentomino/6x10/index.html) groups la
 
 - **Export the workbook:** on Android use Sheets → **⋮ → Share & export → Save as** (or **Send a copy**) → **Excel (.xlsx)**. On desktop use **File → Download → Microsoft Excel (.xlsx)**. A native `.gsheet` file is a shortcut and contains no cells. Choosing it or pasting a sheet URL gives you a Google export link; select the downloaded workbook afterward. No public sharing or account connection is needed in PentoLog.
 - **Workbook contents:** the reader searches worksheets for complete 6 × 10 or 10 × 6 ranges, ignoring headers, gutters and incomplete boards. It reads underlying cell labels, including labels hidden by formatting, or solid cell fills. It maps groups to the twelve pentomino shapes rather than requiring a particular palette. It does not evaluate formulas or extract embedded pictures.
-- **Screenshots:** use **Workspace → Upload a photo** to choose one detected board, or **Collection → Import grids** to import all verified boards in a JPG/PNG. The digital reader checks repeating grid lines and cell interiors, including white and black pieces. After an image import, the photo is available in Workspace for this session; only the grids are saved. Adjusting or reading a frame does not change your saved collection. Cut-off boards are not filled in. For a difficult image, crop to one complete board or use **Adjust frame**.
+- **Screenshots:** use **Solution grid → Upload a photo or screenshot** to choose one detected board, or **Collection → Import grids** to import all verified boards in a JPG/PNG. The digital reader checks repeating grid lines and cell interiors, including white and black pieces. After an image import, the photo is available in Workspace for this session; only the grids are saved. Adjusting or reading a frame does not change your saved collection. Cut-off boards are not filled in. For a difficult image, crop to one complete board or use **Adjust frame**.
 
 ## Run locally
 
@@ -41,12 +51,12 @@ npm run dev
 ```
 
 ```sh
-npm test          # recognition, geometry, validation, symmetry, imports and backups
+npm test          # game rules, recognition, geometry, catalogue, imports and backups
 npm run build     # static production files in dist/
 npm run preview   # serve the production build
 ```
 
-To run the phone-browser tests for the collection gallery, dark theme, brand assets, lid solution, saved-board colors and multi-board frame adjustments, install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
+To run the browser tests (touch/mouse placements, a full numbered playthrough, gallery, theme, lid colors and multi-board photos), install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
 
 No API keys, external fonts, database, or server-side image service are required. The build uses relative asset paths, so it works at the root of an HTTPS static host or under a project path. Hash navigation requires no server rewrite rules.
 
@@ -70,6 +80,6 @@ The hosted app does not receive any saved collections from the preview or offlin
 - Low-contrast, occluded, blurry, or strongly foreshortened photos can need frame or cell corrections. This is a heuristic reader, not an exact-cover solver that invents missing pieces. The user can review every cell before saving.
 - The lexicographically smallest of the four rectangle-preserving orientations is a board's duplicate key. The four orientations of a portrait image are covered by normalizing its long axis first.
 
-`src/core/` contains the image reader and pure puzzle/collection logic. `src/components/` contains the scanner, alignment tools, grid editor, and archive. Tests read the bundled sample image from its actual pixels and exercise different arrangements, colors, seams, orientations, and incomplete boards.
+`src/core/` contains the image reader and pure puzzle/collection logic. `src/components/` contains the playable board, scanner, alignment tools, grid editor, and archive. Tests read the bundled sample image from its actual pixels and exercise different arrangements, colors, seams, orientations, and incomplete boards.
 
 Font and icon notices are included in `public/licenses/`.

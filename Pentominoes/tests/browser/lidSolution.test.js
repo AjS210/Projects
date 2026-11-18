@@ -20,7 +20,10 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   ]);
   await page.evaluate(([key, data]) => localStorage.setItem(key, data), [STORE, stored]);
   await page.reload();
-  await page.getByRole('heading', { name: 'Lid solution', exact: true }).waitFor();
+  await page
+    .getByRole('region', { name: 'Solution grid' })
+    .getByText('Lid solution', { exact: true })
+    .waitFor();
   const button = (name) => page.getByRole('button', { name, exact: true });
   const readFills = (selector) =>
     page.locator(selector).evaluateAll((els) => els.map((e) => e.getAttribute('fill')));
@@ -50,7 +53,10 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   assert.deepEqual(await readFills('.entry-board .cell-square'), fills(previousSample));
   await button('Quick guide').click();
   await button('Load lid solution').click();
-  await page.getByRole('heading', { name: 'Lid solution', exact: true }).waitFor();
+  await page
+    .getByRole('region', { name: 'Solution grid' })
+    .getByText('Lid solution', { exact: true })
+    .waitFor();
   assert.equal((await grid()).join(''), SAMPLE);
   assert.equal(await page.evaluate((key) => localStorage.getItem(key), STORE), stored);
 });

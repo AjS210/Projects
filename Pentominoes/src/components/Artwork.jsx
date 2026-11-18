@@ -15,9 +15,8 @@ export function BrandMark({ size = 38 }) {
   );
 }
 
-function Blocks({ letter, unit = 8 }) {
-  const points = pointsFor(letter),
-    color = PIECES[letter].color;
+export function Blocks({ letter, points = pointsFor(letter), unit = 8 }) {
+  const color = PIECES[letter].color;
   const seen = new Set(points.map(([x, y]) => `${x},${y}`));
   let outer = '';
   for (const [x, y] of points) {
@@ -45,6 +44,7 @@ function Blocks({ letter, unit = 8 }) {
         />
       ))}
       <path
+        className="piece-outline"
         d={outer}
         fill="none"
         stroke={PIECES[letter].ink}
