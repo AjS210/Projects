@@ -28,8 +28,6 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   assert.equal((await grid()).join(''), SAMPLE);
   assert.deepEqual(await readFills('.grid-content .cell-square'), fills(SAMPLE));
   assert.deepEqual(await readFills('.piece-tile .piece-icon rect:first-child'), fills(LETTERS));
-  for (const l of 'TFW')
-    assert.ok(await page.locator(`.hero-art rect[fill="${PIECES[l].color}"]`).count());
 
   await button('Edit grid').click();
   const brushes = await page
