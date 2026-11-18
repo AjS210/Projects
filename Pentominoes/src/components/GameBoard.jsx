@@ -208,19 +208,15 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           <span className="heading-icon">
             <Gamepad2 size={18} />
           </span>
-          <h2 id="game-title">{board.name}</h2>
-          <button className="text-btn board-select" type="button" onClick={() => { setBoardChoice(board.id); setBoardPicker(true); }}>Change board</button>
+          <div className="game-title-stack">
+            <h2 id="game-title">{board.name}</h2>
+            <button className="text-btn board-select" type="button" onClick={() => { setBoardChoice(board.id); setBoardPicker(true); }}>Change Frame</button>
+          </div>
         </div>
-        <span className="stage-label">
-          01 <span>/</span> PLAY
-        </span>
       </div>
       <div className="game-content">
         <div className="game-field">
           <div className="game-meta">
-            <span>
-              {ROWS} × {COLS} <i /> PLAYING FIELD
-            </span>
             <span className={complete ? 'complete' : ''}>{placed.length} / 12 placed</span>
           </div>
           <div className="game-frame-scroll"><div className="game-frame" style={{ minWidth: COLS > 12 ? COLS * 20 + 30 : undefined }}>

@@ -42,9 +42,6 @@ export function CollectionUpload({ photo, onUpload, onReview }) {
           </span>
           <h2 id="upload-title">Collection Upload</h2>
         </div>
-        <span className="stage-label">
-          02 <span>/</span> IMPORT
-        </span>
       </div>
       <div className="upload-body">
         <p>
