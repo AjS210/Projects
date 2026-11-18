@@ -461,7 +461,10 @@ test('frame control appears beneath its name without redundant card labels', asy
     assert.ok(button.y >= heading.y + heading.height - 1, 'button sits below the frame name');
     assert.equal(await game.getByText(/PLAYING FIELD|01\s*\/\s*PLAY/i).count(), 0);
     assert.equal(await upload.getByText(/02\s*\/\s*IMPORT/i).count(), 0);
-    assert.equal(await game.getByText('0 / 12 placed').count(), 1);
+    const count = await game.getByText('0 / 12 placed').boundingBox();
+    assert.ok(Math.abs((button.y + button.height / 2) - (count.y + count.height / 2)) < 2, 'count and button share a row');
+    assert.ok(count.x >= button.x + button.width, 'count appears beside the button');
+    assert.ok(await action('Change Frame').evaluate((el) => getComputedStyle(el).borderStyle !== 'none'), 'frame control has a visible border');
     await action('Change Frame').click();
     await page.getByRole('dialog', { name: 'Choose a gameboard' }).getByRole('button', { name: 'Cancel' }).click();
   }
