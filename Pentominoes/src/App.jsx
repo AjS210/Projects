@@ -218,7 +218,7 @@ export default function App() {
     setError('');
     close();
     go('workspace');
-    notify('Sample board loaded.');
+    notify('Lid solution loaded.');
   }
   return (
     <>
@@ -359,7 +359,7 @@ export default function App() {
         <Dialog
           title="A quick guide to PentoLog"
           eyebrow="THE WORKBENCH MANUAL"
-          description="A photo is the starting point. The shape of each piece is what identifies your solution."
+          description="PentoLog identifies pieces by shape, not color. To put the puzzle away, load the lid solution below."
           onClose={close}
         >
           <ol className="guide-steps">
@@ -413,7 +413,7 @@ export default function App() {
           <div className="dialog-actions">
             <button className="text-btn" onClick={resetSample}>
               <RotateCcw size={14} />
-              Load sample board
+              Load lid solution
             </button>
             <button className="btn btn-primary" onClick={close}>
               Got it

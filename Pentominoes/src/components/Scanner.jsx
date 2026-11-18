@@ -106,21 +106,17 @@ export function Scanner({
               <span className="heading-icon">
                 <Camera size={18} />
               </span>
-              <h2 id="photo-title">Solution photo</h2>
+              <h2 id="photo-title">{photo.sample ? photo.name : 'Solution photo'}</h2>
             </div>
             <span className="stage-label">
-              01 <span>/</span> INPUT
+              01 <span>/</span> {photo.sample ? 'SAMPLE' : 'INPUT'}
             </span>
           </div>
           <div className="photo-content">
             <div className="photo-stage">
               <img
                 src={photo.url}
-                alt={
-                  photo.sample
-                    ? 'A finished twelve-piece wooden pentomino puzzle in a maple tray on a tabletop'
-                    : 'Your uploaded pentomino board'
-                }
+                alt={photo.alt || 'Your uploaded pentomino board'}
                 className={`input-photo ${photo.sample ? '' : 'user-photo'}`}
               />
               {!photo.sample && (
@@ -140,16 +136,16 @@ export function Scanner({
                   />
                 </svg>
               )}
-              <div className="photo-caption">
-                <span className="photo-indicator" />
-                {photoBoards.length > 1
-                  ? boardIndex < 0
-                    ? 'Custom frame'
-                    : `Board ${boardIndex + 1} of ${photoBoards.length}`
-                  : photo.sample
-                    ? 'Sample photo'
+              {!photo.sample && (
+                <div className="photo-caption">
+                  <span className="photo-indicator" />
+                  {photoBoards.length > 1
+                    ? boardIndex < 0
+                      ? 'Custom frame'
+                      : `Board ${boardIndex + 1} of ${photoBoards.length}`
                     : 'Your photo'}
-              </div>
+                </div>
+              )}
               <button
                 type="button"
                 className="photo-expand"

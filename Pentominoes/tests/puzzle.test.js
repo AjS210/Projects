@@ -7,6 +7,7 @@ import {
   identify,
   LETTERS,
   parseGrids,
+  PIECES,
   pointsFor,
   SAMPLE,
   validateBoard,
@@ -36,6 +37,19 @@ test('validates shapes, not just the counts of their letters', () => {
   assert.equal(validateBoard(BLANK).found, 0);
   assert.equal(validateBoard(SAMPLE + '.').valid, false);
   assert.equal(validateBoard('F' + SAMPLE.slice(1)).valid, false);
+});
+test('letters remain readable on all twelve lid colors, including the neutral pieces', () => {
+  function luminance(hex) {
+    const [r, g, b] = Array.from(Buffer.from(hex.slice(1), 'hex'), (byte) => {
+      const c = byte / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+  for (const [letter, { color, ink }] of Object.entries(PIECES)) {
+    const [dark, light] = [luminance(ink), luminance(color)].sort((a, b) => a - b);
+    assert.ok((light + 0.05) / (dark + 0.05) >= 4.5, `Letter ${letter} needs more contrast`);
+  }
 });
 test('rectangular symmetry treats both reflections and the half turn as one, not unrelated boards', () => {
   assert.equal(new Set(variants(SAMPLE)).size, 4);

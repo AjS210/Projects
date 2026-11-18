@@ -12,9 +12,9 @@ export function BrandMark({ size = 32 }) {
   );
 }
 
-function Blocks({ letter, unit = 10, tint, raised = false }) {
+function Blocks({ letter, unit = 10, raised = false }) {
   const points = pointsFor(letter),
-    color = tint || PIECES[letter].color;
+    color = PIECES[letter].color;
   const seen = new Set(points.map(([x, y]) => `${x},${y}`));
   let outer = '';
   for (const [x, y] of points) {
@@ -96,13 +96,13 @@ export function HeroArt() {
       </defs>
       <rect width="293" height="115" fill="url(#artDots)" mask="url(#artMask)" opacity=".62" />
       <g transform="translate(42 41) rotate(-14 22 22)">
-        <Blocks letter="T" tint="#bdadeb" unit={15.5} raised />
+        <Blocks letter="T" unit={15.5} raised />
       </g>
       <g transform="translate(126 21) rotate(13 20 26)">
-        <Blocks letter="F" tint="#f1ba8b" unit={15.5} raised />
+        <Blocks letter="F" unit={15.5} raised />
       </g>
       <g transform="translate(205 46) rotate(-9 21 21)">
-        <Blocks letter="W" tint="#a4d0bc" unit={15.5} raised />
+        <Blocks letter="W" unit={15.5} raised />
       </g>
       <g stroke="#9d9aa9" strokeWidth="1.1">
         <path d="M23 31v6m-3-3h6m80 50v6m-3-3h6m91-62v6m-3-3h6m67 46v6m-3-3h6" />
