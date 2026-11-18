@@ -14,6 +14,7 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Photograph a compl
    - **Read grid** scans the highlighted region and keeps the other detected boards available. **Reset frame** undoes adjustments to the chosen frame. Closing without reading discards the draft.
    - In **Edit grid**, pick a letter and paint cells, or focus a cell and type. Arrow keys move between cells. Editing includes erase, undo, and paste from Sheets.
 4. **Save an original.** All 60 cells must form exactly one each of F, I, L, N, P, T, U, V, W, X, Y, and Z. The duplicate check distinguishes exact matches, horizontal and vertical reflections, and half-turns. A matching entry can be opened instead of saved again.
+5. **Browse your collection.** On a phone, three board thumbnails fit in each row. Tap a board to see its name, saved date, and full grid. You can still search by name.
 
 **Storage:** Only named grids and dates are saved, in this browser's local storage. Photos are processed locally and are not uploaded or saved to the collection. Clearing site data, changing browsers, or leaving a private session can lose the collection. Use **Collection → Export** for a JSON backup, then **Import grids** to restore it or transfer it to another device. Each saved entry also has **Copy grid for Sheets**. There is no Google account connection or automatic sheet synchronization.
 
@@ -39,7 +40,7 @@ npm run build     # static production files in dist/
 npm run preview   # serve the production build
 ```
 
-To run the phone-browser tests for the dark theme, brand assets, lid solution, saved-board colors and multi-board frame adjustments, install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
+To run the phone-browser tests for the collection gallery, dark theme, brand assets, lid solution, saved-board colors and multi-board frame adjustments, install Chromium once with `npx playwright-core install chromium` (or set `CHROMIUM_PATH` to a local Chromium executable), then run `npm run test:browser`.
 
 No API keys, external fonts, database, or server-side image service are required. The build uses relative asset paths, so it works at the root of an HTTPS static host or under a project path. Hash navigation requires no server rewrite rules.
 

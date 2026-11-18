@@ -105,17 +105,17 @@ export function Collection({ records, onImport, onOpen, onScan }) {
       ) : (
         <div className="collection-list">
           {filtered.slice(0, limit).map((r) => (
-            <button className="entry-card" key={r.id} onClick={() => onOpen(r)}>
-              <div className="entry-board">
+            <button
+              type="button"
+              className="entry-card"
+              key={r.id}
+              aria-label={`Open solution: ${r.name}`}
+              title={r.name}
+              onClick={() => onOpen(r)}
+            >
+              <span className="entry-board" aria-hidden="true">
                 <Board cells={r.cells} labels={false} letters={false} />
-              </div>
-              <div className="entry-caption">
-                <div>
-                  <h3>{r.name}</h3>
-                  <span>{formatDate(r.createdAt)}</span>
-                </div>
-                <ArrowUpRight size={17} />
-              </div>
+              </span>
             </button>
           ))}
         </div>

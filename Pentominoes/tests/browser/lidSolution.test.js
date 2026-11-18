@@ -46,7 +46,7 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   assert.equal((await grid()).join(''), SAMPLE);
 
   await page.getByRole('link', { name: /^Collection/ }).click();
-  await page.getByRole('heading', { name: 'Earlier solve' }).waitFor();
+  await button('Open solution: Earlier solve').waitFor();
   assert.deepEqual(await readFills('.entry-board .cell-square'), fills(previousSample));
   await button('Quick guide').click();
   await button('Load lid solution').click();
