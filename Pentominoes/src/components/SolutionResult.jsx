@@ -11,7 +11,14 @@ import { lookupSolution } from '../catalogue.js';
 import { variants } from '../core/puzzle.js';
 
 // Scanned grids and finished games take exactly the same catalogue/save path.
-export function SolutionResult({ cells, busy = false, collection, onSave, onView }) {
+export function SolutionResult({
+  cells,
+  busy = false,
+  hasPhoto = false,
+  collection,
+  onSave,
+  onView,
+}) {
   const reference = lookupSolution(cells);
   const match =
     reference && collection.records.find((r) => r.reference.number === reference.number);
@@ -27,7 +34,9 @@ export function SolutionResult({ cells, busy = false, collection, onSave, onView
           'review',
           TriangleAlert,
           'Review needed',
-          'Crop to one full board, adjust the frame, or edit cells.',
+          hasPhoto
+            ? 'Crop to one full board, adjust the frame, or edit cells.'
+            : 'Check the letters in Edit grid or scan a complete board.',
         ]
       : collection.error
         ? [

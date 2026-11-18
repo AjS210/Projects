@@ -61,7 +61,6 @@ export async function openPhoto(file) {
       width: canvas.width,
       height: canvas.height,
       name: file.name,
-      sample: false,
     };
   } finally {
     URL.revokeObjectURL(url);

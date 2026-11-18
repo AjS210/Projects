@@ -21,21 +21,6 @@ export const PIECES = {
 // Pack-away solution, in the lid's orientation: far edge first, front edge last.
 export const SAMPLE =
   'UUXTTTFFWW' + 'UXXXTFFWWN' + 'UUXLTZFWNN' + 'LLLLYZZZNV' + 'PPPYYYYZNV' + 'PPIIIIIVVV';
-export const SAMPLE_PHOTO = {
-  url: './assets/lid-solution.jpg',
-  name: 'Lid solution',
-  alt: 'Pack-away arrangement from the puzzle lid: red U in the upper left, white I along the front edge, and cream V in the lower right.',
-  width: 1264,
-  height: 848,
-  sample: true,
-};
-// Inner rim of the remade tabletop image, clockwise from its far-left corner.
-export const SAMPLE_FRAME = [
-  [103 / 1264, 216 / 848],
-  [1049 / 1264, 88 / 848],
-  [1183 / 1264, 613 / 848],
-  [196 / 1264, 774 / 848],
-];
 
 export function pointsFor(letter) {
   return PIECES[letter].shape.flatMap((row, y) =>

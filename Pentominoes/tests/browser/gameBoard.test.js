@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openPhone } from './site.js';
 import { STORE } from '../../src/core/collection.js';
+import { DRAFT_KEY } from '../../src/core/gameDraft.js';
 import { BLANK, SAMPLE, asTable, variants } from '../../src/core/puzzle.js';
 import { boards, sheetJpg } from '../fixtures/sheetPhoto.js';
 
@@ -93,7 +94,7 @@ test('finger and mouse drags snap the whole piece, keep the grabbed square, reje
   assert.equal(await saved(), null);
 });
 
-test('a phone playthrough saves the played grid, not the lid photo, and shares catalogue deduplication', async (t) => {
+test('a phone playthrough saves the played grid, not the default grid, and shares catalogue deduplication', async (t) => {
   const page = await openPhone(t);
   page.setDefaultTimeout(6500);
   const { game, grid, tile, cell, read, scan, saved, action } = tools(page);
@@ -176,10 +177,12 @@ test('all photo controls live in Solution grid and reading a multi-board photo l
   const page = await openPhone(t);
   page.setDefaultTimeout(6500);
   const { game, grid, tile, cell, read, scan, saved } = tools(page);
-  for (const name of [/Upload a photo or screenshot/, /^Use camera$/, /^Adjust frame$/]) {
+  for (const name of [/Upload a photo or screenshot/, /^Use camera$/]) {
     assert.equal(await game.getByRole('button', { name }).count(), 0);
     assert.ok(await grid.getByRole('button', { name }).isEnabled());
   }
+  assert.equal(await game.getByRole('button', { name: 'Adjust frame' }).count(), 0);
+  assert.ok(await grid.getByRole('button', { name: 'Adjust frame' }).isDisabled());
   await tile('T').tap();
   await cell(22).tap();
   const before = await read();
@@ -206,6 +209,125 @@ test('all photo controls live in Solution grid and reading a multi-board photo l
     .tap();
   await page.getByRole('button', { name: 'Read grid', exact: true }).tap();
   await grid.locator('.result-unique').waitFor();
+  assert.equal(await scan(), boards[2]);
+  assert.notEqual(boards[2], SAMPLE);
+  await page.getByRole('button', { name: 'Quick guide' }).tap();
+  await page.getByRole('button', { name: 'Load lid solution' }).tap();
+  await grid.locator('.scan-source').waitFor({ state: 'detached' });
+  assert.equal(await scan(), SAMPLE);
+  assert.equal(await grid.getByRole('button', { name: /Choose from/ }).count(), 0);
+  assert.ok(await grid.getByRole('button', { name: 'Adjust frame' }).isDisabled());
   assert.equal(await read(), before);
   assert.equal(await saved(), null);
+});
+
+test('rotating a phone puts the tray beside the field and the scanner below, without restarting play', async (t) => {
+  const page = await openPhone(t);
+  page.setDefaultTimeout(6500);
+  const { game, tile, cell, read, saved, action } = tools(page);
+  const boxes = (view = page) =>
+    Promise.all(
+      ['.game-panel', '.grid-panel', '.game-plane', '.game-tray'].map((s) =>
+        view.locator(s).boundingBox(),
+      ),
+    );
+  const draft = () => page.evaluate((key) => sessionStorage.getItem(key), DRAFT_KEY);
+  await tile('X').tap();
+  await cell(12).tap();
+  await tile('I').tap();
+  await action('Rotate 90°').tap();
+  const started = await draft();
+  const [, , uprightBoard, uprightRack] = await boxes();
+  assert.ok(
+    uprightRack.y >= uprightBoard.y + uprightBoard.height,
+    'portrait tray stays underneath',
+  );
+
+  // Include both sides of the old 760px breakpoint, several Galaxy screen zoom
+  // sizes and a short viewport with browser chrome. No reload between sizes.
+  for (const [width, height] of [
+    [480, 320],
+    [568, 320],
+    [667, 375],
+    [740, 360],
+    [844, 390],
+    [915, 300],
+    [915, 412],
+    [1024, 510],
+    [1280, 560],
+    [854, 384],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await game.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    const [card, scanner, board, tray] = await boxes();
+    assert.ok(
+      card.width >= width - 24 && card.x >= 0 && card.x + card.width <= width,
+      `${width}: full-width game`,
+    );
+    assert.ok(
+      scanner.y >= card.y + card.height && Math.abs(scanner.width - card.width) < 1,
+      `${width}: separate rows`,
+    );
+    assert.ok(
+      tray.x > board.x + board.width &&
+        tray.y < board.y + board.height &&
+        tray.y + tray.height > board.y,
+      `${width}: tray on right, alongside board`,
+    );
+    assert.ok(Math.abs(board.width / 10 - board.height / 6) < 0.1, 'the 60 targets stay square');
+    assert.ok(
+      board.y >= 0 && board.y + board.height <= height + 1,
+      'whole board visible together with controls',
+    );
+    const targets = await game
+      .locator('.tray-piece, .game-transforms button')
+      .evaluateAll((nodes) => nodes.map((el) => el.getBoundingClientRect().toJSON()));
+    assert.equal(targets.length, 15);
+    for (const b of targets)
+      assert.ok(
+        b.left >= tray.x - 0.5 &&
+          b.right <= card.x + card.width &&
+          b.top >= 0 &&
+          b.bottom <= height + 1 &&
+          b.width >= 44 &&
+          b.height >= 44,
+        `${width}: visible tappable sidebar`,
+      );
+    assert.ok((await page.evaluate(() => document.documentElement.scrollWidth)) <= width);
+  }
+  assert.equal(await draft(), started, 'reflow alone does not rewrite the game');
+  assert.equal(await tile('I').getAttribute('aria-pressed'), 'true');
+  // Drag the still-vertical I from the right-hand tray onto D9 on a rotated phone.
+  const touch = await page.context().newCDPSession(page);
+  await touch.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [await center(tile('I'))],
+  });
+  await touch.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [await center(cell(38))],
+  });
+  await game.getByText('Release to place I.').waitFor();
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await game.getByText('I placed at D9.').waitFor();
+  const played = await read();
+  const occupied = (l) => [...played].flatMap((v, i) => (v === l ? [i] : []));
+  assert.deepEqual(occupied('I'), [18, 28, 38, 48, 58]);
+  assert.deepEqual(occupied('X'), [2, 11, 12, 13, 22]);
+  await page.setViewportSize({ width: 384, height: 854 });
+  const [, , backBoard, backRack] = await boxes();
+  assert.ok(backRack.y >= backBoard.y + backBoard.height);
+  assert.equal(await read(), played);
+  assert.equal(await saved(), null, 'orientation and play never add personal solves');
+
+  const desktopPage = await page
+    .context()
+    .browser()
+    .newPage({ viewport: { width: 1360, height: 850 } });
+  await desktopPage.goto(page.url());
+  const [desktop, scanner, deskBoard, deskRack] = await boxes(desktopPage);
+  assert.ok(
+    scanner.x >= desktop.x + desktop.width && deskRack.y >= deskBoard.y + deskBoard.height,
+    'regular desktop layout unchanged',
+  );
 });

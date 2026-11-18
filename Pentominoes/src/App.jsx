@@ -21,7 +21,7 @@ import { Dialog, Notice } from './components/Dialog.jsx';
 import { AlignDialog, CameraDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
 import { Collection, SaveDialog, EntryDialog } from './components/Collection.jsx';
-import { BLANK, SAMPLE, SAMPLE_FRAME, SAMPLE_PHOTO } from './core/puzzle.js';
+import { BLANK, SAMPLE } from './core/puzzle.js';
 import { writeCollection, STORE } from './core/collection.js';
 import { readCollection, mergeRecords } from './catalogue.js';
 import { ImportDialog } from './components/ImportDialog.jsx';
@@ -47,9 +47,9 @@ export default function App() {
     [local, setLocal] = useState(readLocal);
   const [game, setGame] = useState(readGameDraft),
     [saveDraft, setSaveDraft] = useState(null);
-  const [photo, setPhoto] = useState(SAMPLE_PHOTO),
+  const [photo, setPhoto] = useState(null),
     [cells, setCells] = useState(SAMPLE),
-    [corners, setCorners] = useState(SAMPLE_FRAME);
+    [corners, setCorners] = useState(FULL_FRAME);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [modal, setModal] = useState(null),
@@ -104,6 +104,7 @@ export default function App() {
     showReading(result);
   }
   async function readBoard({ file, frame }) {
+    if (!file && !photo) return;
     controller.current?.abort();
     const ctl = new AbortController();
     controller.current = ctl;
@@ -199,7 +200,7 @@ export default function App() {
     store(records);
     // A Collection image import can also be reviewed in Workspace this session.
     // Never save photos to storage or reset an existing review of the same image.
-    if (source && (busy || photo.url !== source.photo.url)) {
+    if (source && (busy || photo?.url !== source.photo.url)) {
       controller.current?.abort();
       setBusy(false);
       setError('');
@@ -211,12 +212,12 @@ export default function App() {
       `${added} solution${added === 1 ? '' : 's'} added${skipped ? ` · ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.`,
     );
   }
-  function resetSample() {
+  function loadLidGrid() {
     controller.current?.abort();
     setBusy(false);
     setPhotoBoards([]);
-    setPhoto(SAMPLE_PHOTO);
-    setCorners(SAMPLE_FRAME);
+    setPhoto(null);
+    setCorners(FULL_FRAME);
     setCells(SAMPLE);
     setError('');
     close();
@@ -275,7 +276,7 @@ export default function App() {
           </div>
         </div>
       </header>
-      <main className="shell main-content" id="main" tabIndex="-1">
+      <main className={`shell main-content ${tab}`} id="main" tabIndex="-1">
         <div className="hero">
           <div className="hero-copy">
             <div className="eyebrow">
@@ -345,8 +346,7 @@ export default function App() {
         accept="image/*"
         ref={nativeCamera}
         capture="environment"
-        className="visually-hidden"
-        tabIndex="-1"
+        hidden
         aria-label="Take a board photo"
         onChange={(e) => {
           if (e.target.files[0]) upload(e.target.files[0]);
@@ -357,8 +357,7 @@ export default function App() {
         type="file"
         accept={PHOTO_TYPES}
         ref={cameraFile}
-        className="visually-hidden"
-        tabIndex="-1"
+        hidden
         aria-label="Choose an existing photo"
         onChange={(e) => {
           if (e.target.files[0]) upload(e.target.files[0]);
@@ -369,7 +368,7 @@ export default function App() {
         <Dialog
           title="A quick guide to PentoLog"
           eyebrow="THE WORKBENCH MANUAL"
-          description="Play with digital pieces or scan a physical puzzle. To put the puzzle away, load the lid solution into the photo grid below."
+          description="Play with digital pieces or scan a physical puzzle. To put the puzzle away, load the lid’s pack-away arrangement into Solution grid."
           onClose={close}
         >
           <ol className="guide-steps">
@@ -436,7 +435,7 @@ export default function App() {
             </p>
           </div>
           <div className="dialog-actions">
-            <button className="text-btn" onClick={resetSample}>
+            <button className="text-btn" onClick={loadLidGrid}>
               <RotateCcw size={14} />
               Load lid solution
             </button>
@@ -447,7 +446,7 @@ export default function App() {
           </div>
         </Dialog>
       )}
-      {modal === 'boards' && photoBoards.length > 1 && (
+      {modal === 'boards' && photo && photoBoards.length > 1 && (
         <PhotoBoardsDialog
           boards={photoBoards}
           photo={photo}
@@ -467,7 +466,7 @@ export default function App() {
           }
         />
       )}
-      {modal === 'align' && (
+      {modal === 'align' && photo && (
         <AlignDialog
           photo={photo}
           corners={corners}
@@ -476,7 +475,7 @@ export default function App() {
           onRead={(frame) => readBoard({ frame })}
         />
       )}
-      {modal === 'photo' && (
+      {modal === 'photo' && photo && (
         <PhotoDialog photo={photo} onClose={close} onAlign={() => setModal('align')} />
       )}
       {modal === 'camera' && (

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { LETTERS, PIECES, SAMPLE } from '../../src/core/puzzle.js';
 import { STORE, packRecords } from '../../src/core/collection.js';
 import { openPhone } from './site.js';
@@ -8,7 +9,7 @@ const previousSample =
   'LLLLNNXUUI' + 'LFNNNXXXUI' + 'FFYYYYXUUI' + 'VFFTYWWZZI' + 'VTTTWWPPZI' + 'VVVTWPPPZZ';
 const fills = (cells) => Array.from(cells, (letter) => PIECES[letter].color);
 
-test('the lid solution and existing saved boards use the same piece colors on a phone', async (t) => {
+test('the lid defaults to a grid only; photo tools require a supplied image, including after a guide reset', async (t) => {
   const page = await openPhone(t);
   const stored = packRecords([
     {
@@ -20,15 +21,31 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   ]);
   await page.evaluate(([key, data]) => localStorage.setItem(key, data), [STORE, stored]);
   await page.reload();
-  await page
-    .getByRole('region', { name: 'Solution grid' })
-    .getByText('Lid solution', { exact: true })
-    .waitFor();
   const button = (name) => page.getByRole('button', { name, exact: true });
+  const region = page.getByRole('region', { name: 'Solution grid' });
   const readFills = (selector) =>
     page.locator(selector).evaluateAll((els) => els.map((e) => e.getAttribute('fill')));
-  const grid = () => page.locator('.grid-content .cell-letter').allTextContents();
-  assert.equal((await grid()).join(''), SAMPLE);
+  const grid = async () => (await region.locator('.cell-letter').allTextContents()).join('');
+  const gridOnly = async () => {
+    await region.getByText('Solution #2182', { exact: true }).waitFor();
+    assert.ok(await region.getByText('New to you · X group B3', { exact: true }).isVisible());
+    assert.equal(await grid(), SAMPLE);
+    assert.equal(await region.locator('.scan-source, img, svg image').count(), 0);
+    assert.equal(await button('View photo').count(), 0);
+    assert.ok(await button('Adjust frame').isDisabled());
+    assert.ok(await button('Use camera').isEnabled());
+    assert.ok(await region.getByRole('button', { name: /Upload a photo/ }).isEnabled());
+    assert.deepEqual(
+      await page.evaluate(() =>
+        performance
+          .getEntriesByType('resource')
+          .map((r) => r.name)
+          .filter((url) => /\.jpe?g(?:[?#]|$)/i.test(url)),
+      ),
+      [],
+    );
+  };
+  await gridOnly();
   assert.deepEqual(await readFills('.grid-content .cell-square'), fills(SAMPLE));
   assert.deepEqual(await readFills('.piece-tile .piece-icon rect:first-child'), fills(LETTERS));
 
@@ -42,21 +59,27 @@ test('the lid solution and existing saved boards use the same piece colors on a 
   );
   await button('Clear grid').click();
   await button('Apply changes').click();
-  // Not just the initial state: the production worker must restore it from the sample JPEG.
+  assert.ok(
+    await button('Adjust frame').isDisabled(),
+    'manually edited cells are not a photograph',
+  );
+
+  // Exercise the perspective reader from an actual file input, not a bundled demo.
+  await page
+    .getByLabel('Upload solution photo')
+    .setInputFiles(fileURLToPath(new URL('../fixtures/angled-board.jpg', import.meta.url)));
+  await region.getByText('angled-board.jpg', { exact: true }).waitFor();
+  await region.getByText('Solution #2182', { exact: true }).waitFor();
   await button('Adjust frame').click();
   await button('Read grid').click();
-  await page.getByText('All 12 piece shapes recognized.', { exact: true }).waitFor();
-  assert.equal((await grid()).join(''), SAMPLE);
+  await region.getByText('Solution #2182', { exact: true }).waitFor();
+  assert.equal(await grid(), SAMPLE);
 
   await page.getByRole('link', { name: /^Collection/ }).click();
   await button('Open solution: Solution #1252').waitFor();
   assert.deepEqual(await readFills('.entry-board .cell-square'), fills(previousSample));
   await button('Quick guide').click();
   await button('Load lid solution').click();
-  await page
-    .getByRole('region', { name: 'Solution grid' })
-    .getByText('Lid solution', { exact: true })
-    .waitFor();
-  assert.equal((await grid()).join(''), SAMPLE);
+  await gridOnly();
   assert.equal(await page.evaluate((key) => localStorage.getItem(key), STORE), stored);
 });
