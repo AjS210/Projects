@@ -320,7 +320,7 @@ export default function App() {
         )}
         <footer className="site-footer">
           <span className="footer-brand">
-            <BrandMark size={15} />
+            <BrandMark size={20} />
             PentoLog<span className="footer-slash">/</span>
             <span>Solver workspace</span>
           </span>

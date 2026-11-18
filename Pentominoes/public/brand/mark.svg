@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-.055 -.055 6.11 9.11"><title>PentoLog</title>
+<g stroke="#101517" stroke-width=".085" stroke-linejoin="round">
+  <path data-piece="F" fill="#64a57d" d="M0 0h2v1h1v1H2v1H1V1H0Z"/>
+  <path data-piece="L" fill="#c7c8ca" d="M2 0h4v2H5V1H2Z"/>
+  <path data-piece="I" fill="#fefefc" d="M0 1h1v5H0Z"/>
+  <path data-piece="W" fill="#6684cc" d="M3 1h1v2H3v1H1V3H2V2H3Z"/>
+  <path data-piece="N" fill="#8073a2" d="M4 1h1v1h1v3H5V3H4Z"/>
+  <path data-piece="Z" fill="#8e7169" d="M3 3h1v2H2v1H1V4H3Z"/>
+  <path data-piece="T" fill="#fde164" d="M4 3h1v2h1v1H3V5H4Z"/>
+  <path data-piece="Y" fill="#8d8e90" d="M2 5h1v4H2V8H1V7H2Z"/>
+  <path data-piece="U" fill="#d06261" d="M0 6h2v1H1v1h1v1H0Z"/>
+</g>
+</svg>

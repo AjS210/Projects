@@ -125,7 +125,7 @@ export function AlignDialog({ photo, corners, boards, onClose, onRead }) {
           aria-label="Adjustable photo frame"
         >
           <image href={photo.url} width={w} height={h} />
-          <path d={path} fill="rgba(21,20,34,.46)" fillRule="evenodd" />
+          <path d={path} fill="rgba(10,15,17,.52)" fillRule="evenodd" />
           {boards.length > 1 &&
             boards.map(
               (b, i) =>
@@ -162,7 +162,7 @@ export function AlignDialog({ photo, corners, boards, onClose, onRead }) {
             className="frame-body"
             points={frame.map(point).join(' ')}
             fill="transparent"
-            stroke={valid ? '#e1d6ff' : '#ffb6a3'}
+            stroke={valid ? 'var(--accent-hover)' : 'var(--danger)'}
             strokeWidth="4"
             tabIndex="0"
             role="button"
@@ -171,7 +171,7 @@ export function AlignDialog({ photo, corners, boards, onClose, onRead }) {
             onKeyDown={(e) => nudge(e, null)}
           />
           <g pointerEvents="none" aria-hidden="true" transform={`translate(${point(center)})`}>
-            <circle r="21" fill="#292238" fillOpacity=".72" />
+            <circle r="21" fill="var(--canvas)" fillOpacity=".72" />
             <Move x="-15" y="-15" size={30} color="white" />
           </g>
           {frame.map(([x, y], i) => (
@@ -192,7 +192,7 @@ export function AlignDialog({ photo, corners, boards, onClose, onRead }) {
                 strokeWidth="36"
                 vectorEffect="non-scaling-stroke"
               />
-              <circle r="12" fill="#6951c9" stroke="white" strokeWidth="4" />
+              <circle r="12" fill="var(--on-accent)" stroke="var(--accent-hover)" strokeWidth="4" />
               <circle r="3.5" fill="white" />
             </g>
           ))}

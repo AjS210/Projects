@@ -100,8 +100,8 @@ export function Board({
               y={y}
               width={u}
               height={u}
-              fill={piece?.color || '#f1f1f6'}
-              stroke={piece?.ink || '#adb0bc'}
+              fill={piece?.color || 'var(--well)'}
+              stroke={piece?.ink || 'var(--line-strong)'}
               strokeWidth=".7"
               strokeOpacity=".42"
             />
@@ -112,7 +112,7 @@ export function Board({
                 y={y + u / 2 + 0.4}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill={piece?.ink || '#a3a1ae'}
+                fill={piece?.ink || 'var(--quiet)'}
               >
                 {piece ? l : '·'}
               </text>
@@ -122,7 +122,7 @@ export function Board({
       })}
       <g
         fill="none"
-        stroke="#4c4a57"
+        stroke="var(--canvas)"
         strokeWidth="1.8"
         strokeOpacity=".57"
         strokeLinejoin="round"

@@ -3,15 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#101517" />
+    <!-- Paint the night canvas before the bundle, even on light-mode devices. -->
+    <style>html{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark;color:#eceee8;background:#101517}</style>
     <meta
       name="description"
       content="Turn photos of your pentomino puzzles into verified grids and keep a mirror-aware collection of your unique solutions."
     />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" sizes="16x16 32x32 48x48" href="./favicon.ico" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="./favicon.svg?v=p-mark" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./brand/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ajs210.github.io/Projects/Pentominoes/" />
+    <meta property="og:site_name" content="PentoLog" />
+    <meta property="og:title" content="PentoLog — Your pentomino solution notebook" />
+    <meta
+      property="og:description"
+      content="Scan your board, check for duplicates, and collect your unique solutions."
+    />
+    <meta
+      property="og:image"
+      content="https://ajs210.github.io/Projects/Pentominoes/brand/share.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="PentoLog and its nine-piece P in the puzzle lid colors on a dark background."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:image"
+      content="https://ajs210.github.io/Projects/Pentominoes/brand/share.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="PentoLog and its nine-piece P in the puzzle lid colors on a dark background."
+    />
     <title>PentoLog — Solution scanner</title>
-    <script type="module" crossorigin src="./assets/index-C2FW0sPo.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DUrxEG01.css">
+    <script type="module" crossorigin src="./assets/index-ChPlzKjP.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DT29dKmN.css">
   </head>
   <body>
     <div id="root"></div>

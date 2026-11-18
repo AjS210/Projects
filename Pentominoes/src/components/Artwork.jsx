@@ -1,18 +1,21 @@
 import React from 'react';
 import { PIECES, pointsFor } from '../core/puzzle.js';
 
-export function BrandMark({ size = 32 }) {
+const markUrl = `${import.meta.env.BASE_URL}brand/mark.svg`;
+
+export function BrandMark({ size = 38 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 34 34" fill="none" aria-hidden="true">
-      <path d="M2 4.8A2.8 2.8 0 0 1 4.8 2H21v10H12v10H2Z" fill="#7761D0" />
-      <path d="M22.5 2H29a2.8 2.8 0 0 1 2.8 2.8v6.1h-9.3Z" fill="#BEADEE" />
-      <path d="M13.5 13.5h18.3V20a2.8 2.8 0 0 1-2.8 2.8H13.5Z" fill="#8F7DD8" />
-      <path d="M2 23.5h10v8.3H4.8A2.8 2.8 0 0 1 2 29Z" fill="#5543A8" />
-    </svg>
+    <img
+      className="brand-mark"
+      src={markUrl}
+      alt=""
+      width={Math.round((size * 2) / 3)}
+      height={size}
+    />
   );
 }
 
-function Blocks({ letter, unit = 10, raised = false }) {
+function Blocks({ letter, unit = 8 }) {
   const points = pointsFor(letter),
     color = PIECES[letter].color;
   const seen = new Set(points.map(([x, y]) => `${x},${y}`));
@@ -28,22 +31,6 @@ function Blocks({ letter, unit = 10, raised = false }) {
   }
   return (
     <g strokeLinejoin="round" strokeLinecap="round">
-      {raised && (
-        <g transform="translate(0.9 2.8)">
-          {points.map(([x, y]) => (
-            <rect
-              key={`${x},${y}`}
-              x={x * unit}
-              y={y * unit}
-              width={unit}
-              height={unit}
-              fill={color}
-              stroke="#626174"
-              strokeWidth="1.2"
-            />
-          ))}
-        </g>
-      )}
       {points.map(([x, y]) => (
         <rect
           key={`${x},${y}`}
@@ -54,15 +41,15 @@ function Blocks({ letter, unit = 10, raised = false }) {
           fill={color}
           stroke={PIECES[letter].ink}
           strokeOpacity=".34"
-          strokeWidth={raised ? 1 : 0.55}
+          strokeWidth=".55"
         />
       ))}
       <path
         d={outer}
         fill="none"
-        stroke={raised ? '#555365' : PIECES[letter].ink}
-        strokeOpacity={raised ? 0.85 : 0.68}
-        strokeWidth={raised ? 1.25 : 0.8}
+        stroke={PIECES[letter].ink}
+        strokeOpacity=".68"
+        strokeWidth=".8"
       />
     </g>
   );
@@ -79,34 +66,24 @@ export function PieceIcon({ letter, size = 34 }) {
     </svg>
   );
 }
+// An enlarged proof of the very same mark used in the header, footer and icons.
 export function HeroArt() {
   return (
-    <svg className="hero-art" viewBox="0 0 293 115" fill="none" aria-hidden="true">
-      <defs>
-        <pattern id="artDots" width="12" height="12" patternUnits="userSpaceOnUse">
-          <circle cx="3" cy="3" r=".9" fill="#a3a4b6" />
-        </pattern>
-        <radialGradient id="artFade">
-          <stop offset=".2" stopColor="white" />
-          <stop offset="1" stopColor="black" />
-        </radialGradient>
-        <mask id="artMask">
-          <ellipse cx="151" cy="59" rx="158" ry="68" fill="url(#artFade)" />
-        </mask>
-      </defs>
-      <rect width="293" height="115" fill="url(#artDots)" mask="url(#artMask)" opacity=".62" />
-      <g transform="translate(42 41) rotate(-14 22 22)">
-        <Blocks letter="T" unit={15.5} raised />
-      </g>
-      <g transform="translate(126 21) rotate(13 20 26)">
-        <Blocks letter="F" unit={15.5} raised />
-      </g>
-      <g transform="translate(205 46) rotate(-9 21 21)">
-        <Blocks letter="W" unit={15.5} raised />
-      </g>
-      <g stroke="#9d9aa9" strokeWidth="1.1">
-        <path d="M23 31v6m-3-3h6m80 50v6m-3-3h6m91-62v6m-3-3h6m67 46v6m-3-3h6" />
-      </g>
-    </svg>
+    <div className="hero-art" aria-hidden="true">
+      <div className="figure-caption">
+        <b>FIG. P</b>
+        <span>Nine-piece mark</span>
+      </div>
+      <svg className="mark-study" viewBox="0 0 124 106" fill="none">
+        <defs>
+          <pattern id="study-dots" width="8" height="8" patternUnits="userSpaceOnUse">
+            <circle cx="4" cy="4" r=".8" fill="var(--line-strong)" />
+          </pattern>
+        </defs>
+        <rect x="1" y="1" width="122" height="104" rx="3" fill="url(#study-dots)" />
+        <path d="M2 11V2h9m102 0h9v9m0 84v9h-9m-102 0H2v-9" stroke="var(--line-strong)" />
+        <image href={markUrl} x="34" y="11" width="56" height="84" />
+      </svg>
+    </div>
   );
 }
