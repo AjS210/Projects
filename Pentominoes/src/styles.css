@@ -185,6 +185,7 @@ p {
   height: 48px;
 }
 .nav-divider {
+  order: 1;
   align-self: center;
   height: 24px;
   width: 1px;
@@ -192,6 +193,7 @@ p {
   margin-left: 1px;
 }
 .primary-nav {
+  order: 2;
   display: flex;
   align-items: stretch;
   gap: 7px;
@@ -236,6 +238,7 @@ p {
   color: var(--accent);
 }
 .header-end {
+  order: 3;
   margin-inline-start: auto;
   min-height: 44px;
   display: flex;
@@ -1815,7 +1818,7 @@ textarea::placeholder,
   }
   .primary-nav {
     grid-area: nav;
-    justify-self: end;
+    justify-self: start;
     gap: 6px;
   }
   .primary-nav a {
