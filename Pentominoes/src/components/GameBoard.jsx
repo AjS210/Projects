@@ -108,7 +108,7 @@ function DragGhost({ points, preview }) {
   );
 }
 
-export function GameBoard({ game, onChange, collection, onSave, onView }) {
+export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, onView }) {
   const plane = useRef(null),
     tray = useRef(null);
   const [selected, setSelected] = useState(null),
@@ -399,10 +399,10 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       )}
       {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
       {boardPicker && (
-        <FramePicker current={board.id} description={placed.length ? 'Choosing a different frame immediately returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares.'}
+        <FramePicker current={board.id} description="Each frame keeps its most recent game. Choose a frame to resume it."
           onClose={() => setBoardPicker(false)} onChoose={(id) => {
             if (id !== board.id) {
-              onChange(newGame(id));
+              onSwitchFrame(id);
               setSelected(null); setAim(false); setFocus(0); report('');
             }
             setBoardPicker(false);
@@ -412,7 +412,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         <Dialog
           title="Start a new game?"
           eyebrow="GAME BOARD"
-          description="Return all twelve pieces to the tray. Your uploads and saved solutions won’t change."
+          description="Return all twelve pieces on this frame to the tray. Other frames, uploads and saved solutions won’t change."
           onClose={() => setReset(false)}
         >
           <div className="dialog-actions">

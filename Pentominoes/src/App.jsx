@@ -18,7 +18,8 @@ import { CollectionUpload } from './components/CollectionUpload.jsx';
 import { UploadReviewDialog } from './components/UploadReviewDialog.jsx';
 import { Board } from './components/Board.jsx';
 import { GameBoard } from './components/GameBoard.jsx';
-import { readGameDraft, writeGameDraft } from './core/gameDraft.js';
+import { readFrameDrafts, writeFrameDrafts } from './core/gameDraft.js';
+import { newGame } from './core/game.js';
 import { Dialog, Notice } from './components/Dialog.jsx';
 import { AlignDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
@@ -47,8 +48,11 @@ const tabFromUrl = () => (location.hash === '#collection' ? 'collection' : 'work
 export default function App() {
   const [tab, setTab] = useState(tabFromUrl),
     [local, setLocal] = useState(readLocal);
-  const [game, setGame] = useState(readGameDraft),
+  const [play, setPlay] = useState(readFrameDrafts),
     [saveDraft, setSaveDraft] = useState(null);
+  const game = play.games[play.active];
+  // Persist a valid legacy tab draft even before the player makes another move.
+  useEffect(() => { writeFrameDrafts(play); }, []);
   const [photo, setPhoto] = useState(null),
     [cells, setCells] = useState(BLANK),
     [corners, setCorners] = useState(FULL_FRAME);
@@ -180,8 +184,14 @@ export default function App() {
     }
   }
   function updateGame(next) {
-    setGame(next);
-    writeGameDraft(next);
+    const state = { active: next.boardId, games: { ...play.games, [next.boardId]: next } };
+    setPlay(state);
+    writeFrameDrafts(state);
+  }
+  function switchGame(id) {
+    const state = { active: id, games: { ...play.games, [id]: play.games[id] ?? newGame(id) } };
+    setPlay(state);
+    writeFrameDrafts(state);
   }
   function requestSave(cells, reference) {
     // Snapshot the chosen board: a photo read and a game need not be the same solve.
@@ -274,6 +284,7 @@ export default function App() {
             <GameBoard
               game={game}
               onChange={updateGame}
+              onSwitchFrame={switchGame}
               collection={local}
               onSave={requestSave}
               onView={openEntry}

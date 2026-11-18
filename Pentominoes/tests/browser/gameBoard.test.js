@@ -442,7 +442,7 @@ test('board picker updates dimensions, blocked squares and the persisted draft',
   assert.equal(await game.locator('[data-piece="#"]').count(), 4);
   await action('Change Frame').click();
   const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
-  assert.match(await dialog.innerText(), /returns all pieces/);
+  assert.match(await dialog.innerText(), /keeps its most recent game/);
   await dialog.getByRole('button', { name: '3×20 Frame' }).click();
   await dialog.waitFor({ state: 'detached' });
   assert.equal(await game.locator('.field-piece').count(), 0);
@@ -476,7 +476,7 @@ test('selecting the current frame or pressing Escape closes the picker without r
   await tile('X').click();
   await action('Change Frame').click();
   let dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
-  assert.match(await dialog.innerText(), /immediately returns all pieces/);
+  assert.match(await dialog.innerText(), /keeps its most recent game/);
   assert.equal(await dialog.getByRole('button', { name: 'Use board' }).count(), 0);
   const current = dialog.getByRole('button', { name: '6×10 Frame', exact: true });
   assert.equal(await current.getAttribute('aria-pressed'), 'true');
@@ -530,4 +530,44 @@ test('3×20 frame fits portrait width and uses a single tray row below it in lan
   await page.mouse.move(to.x, to.y, { steps: 5 });
   await page.mouse.up();
   assert.deepEqual([...await read()].flatMap((v, i) => v === 'I' ? [i] : []), [33, 34, 35, 36, 37], 'drag maps to the scaled 3×20 cells');
+});
+
+test('each frame resumes its game after switching, reloading and starting over elsewhere', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, cell, action, read } = tools(page);
+  const choose = async (name) => {
+    await action('Change Frame').click();
+    const dialog = page.getByRole('dialog', { name: 'Choose a gameboard' });
+    await dialog.getByRole('button', { name, exact: true }).click();
+    await dialog.waitFor({ state: 'detached' });
+  };
+  await choose('3×20 Frame');
+  await tile('X').click();
+  await cell(10).click();
+  await tile('I').click();
+  await cell(30).click();
+  await action(turnRight).click();
+  const longCells = await read();
+  const longPieces = await game.locator('.field-piece').evaluateAll((els) => els.map((e) => [e.dataset.letter, e.getAttribute('transform')]));
+  await choose('8×8 · Center');
+  await tile('L').click();
+  await action(turnLeft).click();
+  const centerCells = await read();
+  await choose('3×20 Frame');
+  assert.equal(await read(), longCells);
+  assert.deepEqual(await game.locator('.field-piece').evaluateAll((els) => els.map((e) => [e.dataset.letter, e.getAttribute('transform')])), longPieces);
+  await page.reload();
+  assert.equal(await read(), longCells, 'active frame survives reload');
+  await choose('8×8 · Center');
+  assert.equal(await read(), centerCells, 'other frame survives reload');
+  await action('Start over').click();
+  await page.getByRole('dialog', { name: 'Start a new game?' }).getByRole('button', { name: 'Start new game' }).click();
+  assert.equal(await game.locator('.field-piece').count(), 0);
+  await choose('3×20 Frame');
+  assert.equal(await read(), longCells, 'resetting one frame leaves the other intact');
+  await page.evaluate(() => sessionStorage.clear());
+  await page.reload();
+  assert.equal(await read(), longCells, 'drafts also survive a fresh browser session');
+  await choose('8×8 · Center');
+  assert.equal(await game.locator('.field-piece').count(), 0, 'reset remains saved');
 });

@@ -14,7 +14,7 @@ In phone landscape the field takes the left side of the full-width game card. Th
 - Pieces may overlap while you work. Selecting, dragging or turning a piece brings it to the front without erasing what it covers. Tap a piece’s tray card to bring it forward even if it’s completely buried. **Return to tray** (or dropping back on the tray) removes only that piece.
 - Without dragging, tap a card and then tap the destination square for the piece’s marked cell. With a keyboard, activate a card, arrow between squares, and press **Enter** or **Space** to place it.
 - Only a board with **all 60 squares covered exactly once** earns a solution number and X group. Choose **Save solution** or **View entry** if it’s already saved. Neither overlapping pieces nor simply using all twelve counts as a solve.
-- A tab-local draft preserves positions, orientations and layer order while you visit Collection or refresh the tab. **Start over → Start new game** empties the board without changing uploads or saved solutions. Only confirmed collection entries go into backups.
+- Each frame keeps its most recent game on this device, including piece positions, orientations and layer order, even after switching frames or reopening the app. **Start over → Start new game** clears only the current frame without changing other frames, uploads or saved solutions. Drafts are separate from the collection and are not included in backups.
 
 ### Scan, import and collect
 
