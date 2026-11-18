@@ -10,7 +10,7 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Play with all twel
 
 In phone landscape the field takes the left side of the full-width game card. The twelve piece cards stay in **three rows of four** on the right, even in a short browser window. In portrait the tray is below the field. Turning the phone keeps the pieces and selection.
 
-- Drag a card onto the board, or tap it to put its piece in the middle. **Board controls** flip or rotate the selected **on-board piece**, never its thumbnail. A turn keeps the marked square in place unless the piece needs to slide in from an edge.
+- Drag a card onto the board, or tap it to put its piece in the middle. Under **Board controls**, the left arrow turns the selected piece 90° counterclockwise and the right arrow turns it 90° clockwise. Both rotations and flips act on the **on-board piece**, never its thumbnail. A turn keeps the marked square in place unless the piece needs to slide in from an edge.
 - Pieces may overlap while you work. Selecting, dragging or turning a piece brings it to the front without erasing what it covers. Tap a piece’s tray card to bring it forward even if it’s completely buried. **Return to tray** (or dropping back on the tray) removes only that piece.
 - Without dragging, tap a card and then tap the destination square for the piece’s marked cell. With a keyboard, activate a card, arrow between squares, and press **Enter** or **Space** to place it.
 - Only a board with **all 60 squares covered exactly once** earns a solution number and X group. Choose **Save solution** or **View entry** if it’s already saved. Neither overlapping pieces nor simply using all twelve counts as a solve.
