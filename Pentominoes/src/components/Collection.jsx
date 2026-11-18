@@ -104,11 +104,10 @@ export function Collection({ records, onImport, onOpen, onScan }) {
           </div>
           <h3>A place for your unique solves.</h3>
           <p>
-            Save your first board from the scanner, or bring over the grids you already have in
-            Google Sheets.
+            Play or scan your first board, or import the grids you already have in Google Sheets.
           </p>
           <button className="btn btn-primary" onClick={onScan}>
-            Open scanner
+            Open workspace
             <ArrowUpRight size={15} />
           </button>
         </div>

@@ -8,19 +8,22 @@ import {
   X,
   Camera,
   Grid2X2,
+  Gamepad2,
   BookmarkPlus,
   HardDrive,
   RotateCcw,
 } from 'lucide-react';
 import { BrandMark, HeroArt } from './components/Artwork.jsx';
 import { Scanner } from './components/Scanner.jsx';
+import { GameBoard } from './components/GameBoard.jsx';
+import { readGameDraft, writeGameDraft } from './core/gameDraft.js';
 import { Dialog, Notice } from './components/Dialog.jsx';
 import { AlignDialog, CameraDialog, PhotoDialog } from './components/PhotoDialogs.jsx';
 import { GridEditor } from './components/GridEditor.jsx';
 import { Collection, SaveDialog, EntryDialog } from './components/Collection.jsx';
-import { BLANK, SAMPLE, SAMPLE_FRAME, SAMPLE_PHOTO, validateBoard } from './core/puzzle.js';
+import { BLANK, SAMPLE, SAMPLE_FRAME, SAMPLE_PHOTO } from './core/puzzle.js';
 import { writeCollection, STORE } from './core/collection.js';
-import { lookupSolution, readCollection, mergeRecords } from './catalogue.js';
+import { readCollection, mergeRecords } from './catalogue.js';
 import { ImportDialog } from './components/ImportDialog.jsx';
 import { PhotoBoardsDialog } from './components/PhotoBoardsDialog.jsx';
 import { FULL_FRAME } from './core/recognition.js';
@@ -42,6 +45,8 @@ const tabFromUrl = () => (location.hash === '#collection' ? 'collection' : 'work
 export default function App() {
   const [tab, setTab] = useState(tabFromUrl),
     [local, setLocal] = useState(readLocal);
+  const [game, setGame] = useState(readGameDraft),
+    [saveDraft, setSaveDraft] = useState(null);
   const [photo, setPhoto] = useState(SAMPLE_PHOTO),
     [cells, setCells] = useState(SAMPLE),
     [corners, setCorners] = useState(SAMPLE_FRAME);
@@ -55,15 +60,6 @@ export default function App() {
   const controller = useRef(null),
     nativeCamera = useRef(null),
     cameraFile = useRef(null);
-  const check = useMemo(() => validateBoard(cells), [cells]);
-  const reference = useMemo(
-    () => (check.valid ? lookupSolution(cells) : null),
-    [cells, check.valid],
-  );
-  const match = useMemo(
-    () => reference && local.records.find((r) => r.reference.number === reference.number),
-    [local.records, reference],
-  );
   useEffect(() => {
     const navigate = () => {
       setTab(tabFromUrl());
@@ -82,7 +78,7 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    document.title = `PentoLog — ${tab === 'collection' ? 'Solution collection' : 'Solution scanner'}`;
+    document.title = `PentoLog — ${tab === 'collection' ? 'Solution collection' : 'Puzzle workspace'}`;
   }, [tab]);
   useEffect(() => {
     if (!toast) return;
@@ -139,7 +135,8 @@ export default function App() {
       } else {
         loadDetections(result);
         if (result.boards?.length > 1) {
-          setModal('boards');
+          // The board switcher stays available if the player opened a save dialog.
+          setModal((current) => current ?? 'boards');
           return;
         }
       }
@@ -177,8 +174,17 @@ export default function App() {
       throw new Error('Your collection could not be read. No saved data has been changed.');
     }
   }
+  function updateGame(next) {
+    setGame(next);
+    writeGameDraft(next);
+  }
+  function requestSave(cells, reference) {
+    // Snapshot the chosen board: a photo read and a game need not be the same solve.
+    setSaveDraft({ cells, reference });
+    setModal('save');
+  }
   function save() {
-    if (!reference || busy) throw new Error('Verify all twelve pieces before saving.');
+    const { cells, reference } = saveDraft;
     const { records, added } = mergeRecords(latest(), [{ cells }]);
     store(records);
     close();
@@ -276,38 +282,44 @@ export default function App() {
               <span className="eyebrow-line" />
               {tab === 'collection' ? 'PERSONAL ARCHIVE' : 'PENTOMINO TOOLKIT'}
             </div>
-            <h1>{tab === 'collection' ? 'Solution collection' : 'Solution scanner'}</h1>
+            <h1>{tab === 'collection' ? 'Solution collection' : 'Puzzle workspace'}</h1>
             <p>
               {tab === 'collection'
                 ? 'Your finds by catalogue number. Explore them by the position of the X piece.'
-                : 'Capture your board, check for duplicates, and collect your unique solutions.'}
+                : 'Play a board or scan a photo. Save your finds by solution number.'}
             </p>
           </div>
           <HeroArt />
         </div>
         {local.error && <Notice error>{local.error}</Notice>}
         {tab === 'workspace' ? (
-          <Scanner
-            photo={photo}
-            photoBoards={photoBoards}
-            corners={corners}
-            boardIndex={boardIndex}
-            onChooseBoard={() => setModal('boards')}
-            cells={cells}
-            check={check}
-            reference={reference}
-            match={match}
-            busy={busy}
-            error={error}
-            collectionError={local.error}
-            onUpload={upload}
-            onCamera={takePhoto}
-            onAlign={() => setModal('align')}
-            onExpand={() => setModal('photo')}
-            onEdit={() => setModal('edit')}
-            onSave={() => setModal('save')}
-            onView={() => openEntry(match)}
-          />
+          <div className="work-panels">
+            <GameBoard
+              game={game}
+              onChange={updateGame}
+              collection={local}
+              onSave={requestSave}
+              onView={openEntry}
+            />
+            <Scanner
+              photo={photo}
+              photoBoards={photoBoards}
+              corners={corners}
+              boardIndex={boardIndex}
+              onChooseBoard={() => setModal('boards')}
+              cells={cells}
+              collection={local}
+              busy={busy}
+              error={error}
+              onUpload={upload}
+              onCamera={takePhoto}
+              onAlign={() => setModal('align')}
+              onExpand={() => setModal('photo')}
+              onEdit={() => setModal('edit')}
+              onSave={requestSave}
+              onView={openEntry}
+            />
+          </div>
         ) : (
           <Collection
             records={local.records}
@@ -357,10 +369,24 @@ export default function App() {
         <Dialog
           title="A quick guide to PentoLog"
           eyebrow="THE WORKBENCH MANUAL"
-          description="PentoLog identifies pieces by shape, not color. To put the puzzle away, load the lid solution below."
+          description="Play with digital pieces or scan a physical puzzle. To put the puzzle away, load the lid solution into the photo grid below."
           onClose={close}
         >
           <ol className="guide-steps">
+            <li>
+              <span>
+                <Gamepad2 size={18} />
+              </span>
+              <div>
+                <h3>Play the 6 × 10 board</h3>
+                <p>
+                  Drag a piece from the tray, or select it and tap an empty square for its marked
+                  cell. Flip it either way or rotate it clockwise. Drag a placed piece to move it;
+                  Return to tray lifts it out. With a keyboard, select a tray piece, use the arrow
+                  keys on the board and press Enter to place. All twelve must fit without overlap.
+                </p>
+              </div>
+            </li>
             <li>
               <span>
                 <Camera size={18} />
@@ -476,9 +502,7 @@ export default function App() {
           }}
         />
       )}
-      {modal === 'save' && reference && (
-        <SaveDialog cells={cells} reference={reference} onClose={close} onSave={save} />
-      )}
+      {modal === 'save' && saveDraft && <SaveDialog {...saveDraft} onClose={close} onSave={save} />}
       {modal === 'import' && <ImportDialog onClose={close} onImport={importRecords} />}
       {modal === 'entry' && record && (
         <EntryDialog
