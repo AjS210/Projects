@@ -171,7 +171,7 @@ test('a numbered playthrough and an independently reviewed upload share catalogu
   );
   await page.getByRole('link', { name: /^Collection/ }).tap();
   await page.getByRole('button', { name: 'Open solution: Solution #1' }).waitFor();
-  await page.getByRole('link', { name: 'Workspace', exact: true }).tap();
+  await page.getByRole('link', { name: 'Gameboard', exact: true }).tap();
   await game.waitFor();
   assert.equal(await read(), first, 'visiting Collection does not reset the game');
   await action('View entry').tap();

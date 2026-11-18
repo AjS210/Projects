@@ -35,7 +35,7 @@ test('after bulk import, move the frame to another board, resize, read and switc
     JSON.parse(original).solutions.map((r) => r.name),
     ['Solution #2182'],
   );
-  await page.getByRole('link', { name: 'Workspace', exact: true }).click();
+  await page.getByRole('link', { name: 'Gameboard', exact: true }).click();
   await button('Review last upload').click();
   await button('Adjust grid').click();
   assert.equal(await jump.inputValue(), '0');
