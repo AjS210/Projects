@@ -250,15 +250,8 @@
   border-radius: 6px;
 }
 .tray-piece > svg:not(.tray-check) {
-  width: min(90%, 43px);
-  height: 43px;
-}
-.tray-name {
-  position: absolute;
-  top: 3px;
-  left: 5px;
-  color: var(--muted);
-  font: 10px var(--mono);
+  width: 100%;
+  height: 100%;
 }
 .tray-piece:hover {
   background: var(--raised);
@@ -268,9 +261,6 @@
   background: var(--accent-well);
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent-edge);
-}
-.tray-piece[aria-pressed='true'] .tray-name {
-  color: var(--accent-hover);
 }
 .tray-piece.on-board > svg:not(.tray-check) {
   opacity: 0.35;
@@ -421,8 +411,8 @@
     height: clamp(44px, 13svh, 56px);
   }
   .tray-piece > svg:not(.tray-check) {
-    width: min(90%, 52px);
-    height: min(100%, 52px);
+    width: 100%;
+    height: 100%;
   }
   .game-foot {
     grid-area: foot;
