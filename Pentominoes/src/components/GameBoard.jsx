@@ -11,7 +11,8 @@ import {
   RotateCw,
   Undo2,
 } from 'lucide-react';
-import { COLS, LETTERS, PIECES, ROWS, pointsFor } from '../core/puzzle.js';
+import { LETTERS, PIECES, pointsFor } from '../core/puzzle.js';
+import { BOARDS, DEFAULT_BOARD, getBoard } from '../core/boards.js';
 import {
   bringForward,
   gameCells,
@@ -113,12 +114,17 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
     [aim, setAim] = useState(false),
     [focus, setFocus] = useState(0),
     [message, report] = useState(''),
-    [reset, setReset] = useState(false);
+    [reset, setReset] = useState(false),
+    [boardPicker, setBoardPicker] = useState(false),
+    [boardChoice, setBoardChoice] = useState(game.boardId ?? DEFAULT_BOARD);
+  const board = getBoard(game.boardId);
+  const COLS = board.width, ROWS = board.height;
   const { pieces, stack: placed } = game;
   const cells = gameCells(game);
-  const complete = !cells.includes('.'); // sixty in-bounds squares, each covered exactly once
-  const covered = cells.replaceAll('.', '').length;
-  const overlap = covered < placed.length * 5;
+  const blocked = new Set(board.blocked.map(([x, y]) => y * COLS + x));
+  const covered = [...cells].filter((c, i) => !blocked.has(i) && c !== '.').length;
+  const complete = placed.length === 12 && covered === 60;
+  const overlap = !complete && covered < placed.length * 5;
   function select(l) {
     const next = bringForward(game, l);
     if (next !== game) onChange(next);
@@ -135,7 +141,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
     if (keyboard) {
       const { at, points } = next.pieces[l];
       const [x, y] = handleSquare(points);
-      focusCell((at[1] + y) * COLS + at[0] + x);
+      focusCell(Math.min(ROWS - 1, at[1] + y) * COLS + Math.min(COLS - 1, at[0] + x));
     }
   }
   function drop(l, at) {
@@ -148,7 +154,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
       const piece = next.pieces[l];
       const [x, y] = handleSquare(piece.points);
       report(
-        !gameCells(next).includes('.')
+        next.stack.length === 12 && [...gameCells(next)].filter((c, i) => !blocked.has(i) && c !== '.').length === 60
           ? 'All twelve pieces fit! Your solution is ready below.'
           : `${l} placed at ${locationName(piece.at[0] + x, piece.at[1] + y)}.`,
       );
@@ -161,7 +167,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
   }
   const { start, preview, events } = usePieceDrag({ game, plane, tray, select, drop, report });
   function activateCell(i) {
-    if (!aim && cells[i] !== '.') select(cells[i]);
+    if (!aim && cells[i] !== '.' && cells[i] !== '#') select(cells[i]);
     else if (selected) {
       const [gx, gy] = handleSquare(pieces[selected].points);
       drop(selected, [(i % COLS) - gx, Math.floor(i / COLS) - gy]);
@@ -196,13 +202,14 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         ? `${selected} on top. Drag or turn the piece on the board.`
         : 'Drag a piece onto the board, or tap its card to add it in the middle.');
   return (
-    <section className="panel game-panel" aria-labelledby="game-title" {...events}>
+    <section className="panel game-panel" aria-label="Game board" style={{ '--board-cols': COLS, '--board-rows': ROWS }} {...events}>
       <div className="panel-heading">
         <div className="section-title">
           <span className="heading-icon">
             <Gamepad2 size={18} />
           </span>
-          <h2 id="game-title">Game board</h2>
+          <h2 id="game-title">{board.name}</h2>
+          <button className="text-btn board-select" type="button" onClick={() => { setBoardChoice(board.id); setBoardPicker(true); }}>Change board</button>
         </div>
         <span className="stage-label">
           01 <span>/</span> PLAY
@@ -212,20 +219,20 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
         <div className="game-field">
           <div className="game-meta">
             <span>
-              6 × 10 <i /> PLAYING FIELD
+              {ROWS} × {COLS} <i /> PLAYING FIELD
             </span>
             <span className={complete ? 'complete' : ''}>{placed.length} / 12 placed</span>
           </div>
-          <div className="game-frame">
+          <div className="game-frame-scroll"><div className="game-frame" style={{ minWidth: COLS > 12 ? COLS * 20 + 30 : undefined }}>
             <span className="ruler-cross" aria-hidden="true">
               +
             </span>
-            <div className="col-ruler" aria-hidden="true">
+            <div className="col-ruler" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}>
               {Array.from({ length: COLS }, (_, x) => (
                 <span key={x}>{x + 1}</span>
               ))}
             </div>
-            <div className="row-ruler" aria-hidden="true">
+            <div className="row-ruler" aria-hidden="true" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)` }}>
               {Array.from({ length: ROWS }, (_, y) => (
                 <span key={y}>{rowLabel(y)}</span>
               ))}
@@ -233,8 +240,9 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             <div
               ref={plane}
               className="game-plane"
+              style={{ aspectRatio: `${COLS} / ${ROWS}` }}
               role="group"
-              aria-label="Playing field: six rows, ten columns"
+              aria-label={`Playing field: ${ROWS} rows, ${COLS} columns`}
               aria-describedby="play-hint"
             >
               <svg
@@ -254,6 +262,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#field-squares)" />
+                {board.blocked.map(([x, y]) => <rect key={`${x}-${y}`} x={x * UNIT} y={y * UNIT} width={UNIT} height={UNIT} className="blocked-square" />)}
                 {placed.map((l) => (
                   <g
                     key={l}
@@ -266,7 +275,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                   </g>
                 ))}
               </svg>
-              {!placed.length && !activeLetter && (
+              {!placed.length && !activeLetter && ROWS > 2 && (
                 <div className="field-prompt" aria-hidden="true">
                   <span>
                     <Hand size={16} />
@@ -274,7 +283,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                   </span>
                 </div>
               )}
-              <div className="field-targets">
+              <div className="field-targets" style={{ gridTemplate: `repeat(${ROWS}, minmax(0, 1fr)) / repeat(${COLS}, minmax(0, 1fr))` }}>
                 {Array.from(cells, (l, i) => {
                   const x = i % COLS,
                     y = Math.floor(i / COLS);
@@ -284,12 +293,12 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                       type="button"
                       data-square={i}
                       data-piece={l}
-                      aria-label={`${locationName(x, y)}: ${l === '.' ? 'empty' : l + ' piece'}`}
+                      aria-label={`${locationName(x, y)}: ${l === '.' ? 'empty' : l === '#' ? 'blocked' : l + ' piece'}${blocked.has(i) && l !== '#' ? ', over blocked square' : ''}`}
                       tabIndex={focus === i ? 0 : -1}
                       onFocus={() => setFocus(i)}
                       onKeyDown={(e) => boardKey(e, i)}
                       onPointerDown={
-                        l === '.'
+                        (l === '.' || l === '#')
                           ? undefined
                           : (e) =>
                               start(e, l, [x - pieces[l].at[0], y - pieces[l].at[1]], () =>
@@ -302,7 +311,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
                 })}
               </div>
             </div>
-          </div>
+          </div></div>
         </div>
         <div className="game-kit">
           <div className="turn-caption">
@@ -391,10 +400,41 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
           </button>
         </div>
       </div>
-      {complete && (
+      {complete && board.id !== DEFAULT_BOARD && (
+        <p className="board-solved" role="status">All twelve pieces fit! Collection saving is available for the 6×10 frame only.</p>
+      )}
+      {complete && board.id === DEFAULT_BOARD && (
         <SolutionResult cells={cells} collection={collection} onSave={onSave} onView={onView} />
       )}
       {preview && <DragGhost points={pieces[preview.letter].points} preview={preview} />}
+      {boardPicker && (
+        <Dialog title="Choose a gameboard" eyebrow="GAME BOARD" description={placed.length ? 'Changing boards returns all pieces to the tray. Your collection will not change.' : 'Choose a classic frame or an 8×8 layout with four blocked squares. Collection saving is currently available for 6×10 solutions only.'} onClose={() => setBoardPicker(false)} wide>
+          <div className="board-options" role="radiogroup" aria-label="Board layouts">
+            {BOARDS.map((option) => (
+              <label className="board-option" key={option.id}>
+                <input type="radio" name="game-board" value={option.id} checked={boardChoice === option.id} onChange={() => setBoardChoice(option.id)} />
+                <svg aria-hidden="true" viewBox={`0 0 ${option.width} ${option.height}`} preserveAspectRatio="xMidYMid meet">
+                  {Array.from({ length: option.width * option.height }, (_, i) => (
+                    <rect key={i} x={i % option.width} y={Math.floor(i / option.width)} width="1" height="1" fill="var(--well)" stroke="var(--line-strong)" strokeWidth=".06" />
+                  ))}
+                  {option.blocked.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" className="blocked-square" />)}
+                </svg>
+                <span>{option.name}</span>
+              </label>
+            ))}
+          </div>
+          <div className="dialog-actions">
+            <button className="btn btn-light" onClick={() => setBoardPicker(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={() => {
+              if (boardChoice !== board.id) {
+                onChange(newGame(boardChoice));
+                setSelected(null); setAim(false); setFocus(0); report('');
+              }
+              setBoardPicker(false);
+            }}>Use board</button>
+          </div>
+        </Dialog>
+      )}
       {reset && (
         <Dialog
           title="Start a new game?"
@@ -409,7 +449,7 @@ export function GameBoard({ game, onChange, collection, onSave, onView }) {
             <button
               className="btn btn-primary"
               onClick={() => {
-                onChange(newGame());
+                onChange(newGame(board.id));
                 setSelected(null);
                 setAim(false);
                 report('');

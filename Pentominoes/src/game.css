@@ -1,5 +1,4 @@
-/* The playing field is always ten square cells wide. The transparent native
-   buttons and the drawn pieces share the same rectangle at every phone zoom. */
+/* Native buttons and drawn pieces share the same square-cell geometry. */
 .game-panel {
   min-width: 0;
   container-type: inline-size;
@@ -124,14 +123,14 @@
   outline: 2px dashed white;
   box-shadow: inset 0 0 0 3px #232725;
 }
-.field-targets button:not([data-piece='.']),
+.field-targets button:not([data-piece='.']):not([data-piece='#']),
 .tray-piece {
   touch-action: none;
   cursor: grab;
   user-select: none;
   -webkit-touch-callout: none;
 }
-.field-targets button:not([data-piece='.']):active,
+.field-targets button:not([data-piece='.']):not([data-piece='#']):active,
 .tray-piece:active {
   cursor: grabbing;
 }
@@ -332,7 +331,7 @@
   .game-panel {
     --gap: clamp(6px, 1vw, 12px);
     --rail-min: clamp(188px, 24vw, 250px);
-    --field-limit: calc((100svh - 32px) * 10 / 6 + 20px);
+    --field-limit: calc((100svh - 32px) * var(--board-cols) / var(--board-rows) + 20px);
     display: grid;
     grid-template-columns:
       minmax(0, min(calc(100% - var(--gap) - var(--rail-min)), var(--field-limit)))
@@ -428,3 +427,14 @@
     margin: 5px -7px -7px;
   }
 }
+
+/* Different frames share square cells; wide frames scroll rather than shrink to unusable targets. */
+.game-frame-scroll { overflow-x: auto; max-width: 100%; }
+.blocked-square { fill: #747b7d; stroke: var(--line-strong); stroke-width: .2; }
+.board-select { white-space: nowrap; }
+.board-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
+.board-option { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line-strong); border-radius: 6px; cursor: pointer; }
+.board-option:has(input:checked) { border-color: var(--accent); background: var(--accent-well); }
+.board-option svg { grid-column: 1 / -1; width: 100%; height: 62px; }
+.board-option span { font-size: 12px; }
+.board-solved { padding: 12px 20px; color: var(--good); }
