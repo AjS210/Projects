@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PIECES } from '../../src/core/puzzle.js';
+import { LID_COLORS } from '../../src/core/lidColors.js';
 import { openPhone, uploadBoardPhoto } from './site.js';
 
 // Independent transcription of the supplied outline, read top to bottom.
@@ -84,7 +84,7 @@ test('page, favicon, touch, launcher and share art all reproduce the traced P in
   const social = new URL(await page.locator('meta[property="og:image"]').getAttribute('content'));
   const share = new URL(social.pathname, base).href; // use the local Pages build, not the network
   const palette = Object.fromEntries(
-    Object.entries(PIECES).map(([l, p]) => [parseInt(p.color.slice(1), 16), l]),
+    Object.entries(LID_COLORS).map(([l, color]) => [parseInt(color.slice(1), 16), l]),
   );
   for (const src of [url(mark), favicon, touch, ...launcher, share]) {
     assert.ok(src.startsWith(base), `${src} must resolve within the nested app`);
@@ -139,4 +139,27 @@ test('light OS preference still opens dark workspace, empty editor, collection a
   await page.route(/\/assets\/.*\.(js|css)$/, (route) => route.abort());
   await page.reload();
   await dark('html');
+});
+
+test('vivid piece swatches and the dark P outline are consistent in the tray and game', async (t) => {
+  const { PIECES } = await import('../../src/core/puzzle.js');
+  const page = await openPhone(t);
+  const game = page.getByRole('region', { name: 'Game board' });
+  const p = game.getByRole('button', { name: 'P piece, in tray' });
+  assert.equal(await p.locator('rect').first().getAttribute('fill'), PIECES.P.color);
+  assert.equal(await p.locator('rect').first().getAttribute('stroke'), PIECES.P.outline);
+  assert.equal(await p.locator('.piece-outline').getAttribute('stroke'), PIECES.P.outline);
+  const f = game.getByRole('button', { name: 'F piece, in tray' });
+  assert.equal(await f.locator('rect').first().getAttribute('fill'), PIECES.F.color);
+  await p.click();
+  await f.click();
+  const placed = game.locator('.field-piece[data-letter="P"]');
+  assert.equal(await placed.locator('rect').first().getAttribute('stroke'), PIECES.P.outline);
+  assert.equal(await placed.locator('.piece-outline').getAttribute('stroke'), PIECES.P.outline);
+  assert.equal(await placed.locator('text').getAttribute('fill'), PIECES.P.ink, 'P keeps a readable white letter');
+  await page.getByRole('button', { name: 'Quick guide' }).click();
+  await page.getByRole('button', { name: 'View lid solution' }).click();
+  const board = page.getByRole('dialog', { name: 'Pack-away grid' }).locator('.puzzle-board');
+  assert.equal(await board.locator('[data-cell="40"] rect').getAttribute('stroke'), PIECES.P.outline);
+  assert.equal(await board.locator('[data-cell="40"] text').getAttribute('fill'), PIECES.P.ink);
 });

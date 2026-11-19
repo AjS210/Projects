@@ -14,7 +14,7 @@
   font-display: swap;
 }
 :root {
-  /* Night workbench surfaces. Physical pieces keep their original lid swatches. */
+  /* Night workbench surfaces, with vivid digital piece colors. */
   color-scheme: dark;
   --canvas: #101517;
   --surface: #1b2124;
@@ -1279,7 +1279,7 @@ textarea::placeholder,
   display: grid;
   place-items: center;
   min-height: 32px;
-  border: 1px solid color-mix(in srgb, var(--piece-ink) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--piece-outline) 50%, transparent);
   border-radius: 6px;
   color: var(--piece-ink);
   background: var(--piece-fill);

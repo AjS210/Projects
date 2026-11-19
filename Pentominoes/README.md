@@ -4,7 +4,7 @@ A browser-based notebook for **6 × 10 pentomino solutions**. Play with all twel
 
 ## Try it
 
-[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos and piece swatches keep their original colors. **Game board** opens with a tray of twelve pieces and an empty playing field (or your current game in this tab). **Collection Upload** opens an image picker, not a second grid. For the pack-away arrangement (**Solution #2182, X group B3**), use **Quick guide → View lid solution**. It’s a read-only reference, not an upload or a saved find.
+[Open PentoLog](https://ajs210.github.io/Projects/Pentominoes/). The workspace is dark by default, even on a light-mode device. Photos keep their original colors; digital piece swatches use a more vibrant palette. **Game board** opens with a tray of twelve pieces and an empty playing field (or your current game in this tab). **Collection Upload** opens an image picker, not a second grid. For the pack-away arrangement (**Solution #2182, X group B3**), use **Quick guide → View lid solution**. It’s a read-only reference, not an upload or a saved find.
 
 ### Play a board
 
@@ -65,7 +65,7 @@ No API keys, external fonts, database, or server-side image service are required
 
 ### Logo and browser artwork
 
-The [P mark](./public/brand/mark.svg) follows the supplied **nine-piece outline**, not a crop of the 12-piece lid solution. The page mark, tab icons, iOS touch icon, Android launcher/maskable icons, and link-preview card all come from the same paths and the `PIECES` lid swatches. The mark is decoration; it is never added to a grid or collection.
+The [P mark](./public/brand/mark.svg) follows the supplied **nine-piece outline**, not a crop of the 12-piece lid solution. The page mark, tab icons, iOS touch icon, Android launcher/maskable icons, and link-preview card all come from the same paths and original lid-inspired brand swatches; the digital game pieces use a more vibrant palette. The mark is decoration; it is never added to a grid or collection.
 
 To update the artwork, edit `scripts/build-brand.mjs` and run `npm run brand` with Chromium installed as above. Commit the resulting files in `public/`, then run `npm run build:pages`. Ordinary app builds use those checked-in assets and do not require Chromium. Browser icons and the manifest resolve relative to the app; the static social tags use the public Pages URL so link previews work without JavaScript.
 

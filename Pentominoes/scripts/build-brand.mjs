@@ -2,7 +2,7 @@
 // external image service is needed at app build time or on the user's device.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright-core';
-import { PIECES } from '../src/core/puzzle.js';
+import { LID_COLORS } from '../src/core/lidColors.js';
 
 // Traced on the supplied outline's six-column, nine-row lattice, not the
 // rectangular 12-piece lid board. Each closed path is one whole pentomino.
@@ -20,7 +20,7 @@ const outlines = {
 const night = '#101517';
 const mark = `<g stroke="${night}" stroke-width=".085" stroke-linejoin="round">
 ${Object.entries(outlines)
-  .map(([letter, d]) => `  <path data-piece="${letter}" fill="${PIECES[letter].color}" d="${d}"/>`)
+  .map(([letter, d]) => `  <path data-piece="${letter}" fill="${LID_COLORS[letter]}" d="${d}"/>`)
   .join('\n')}
 </g>`;
 const svg = (view, content) =>
