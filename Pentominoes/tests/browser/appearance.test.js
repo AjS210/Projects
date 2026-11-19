@@ -154,9 +154,9 @@ test('vivid piece swatches and the dark P outline are consistent in the tray and
   await p.click();
   await f.click();
   const placed = game.locator('.field-piece[data-letter="P"]');
-  assert.equal(await placed.locator('rect').first().getAttribute('stroke'), PIECES.P.outline);
+  assert.equal(await placed.locator('rect').first().getAttribute('stroke'), 'none');
   assert.equal(await placed.locator('.piece-outline').getAttribute('stroke'), PIECES.P.outline);
-  assert.equal(await placed.locator('text').getAttribute('fill'), PIECES.P.ink, 'P keeps a readable white letter');
+  assert.equal(await placed.locator('text').count(), 0, 'pieces on the playing board have no letters');
   await page.getByRole('button', { name: 'Quick guide' }).click();
   await page.getByRole('button', { name: 'View lid solution' }).click();
   const board = page.getByRole('dialog', { name: 'Pack-away grid' }).locator('.puzzle-board');

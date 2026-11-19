@@ -32,6 +32,9 @@ test('native fullscreen keeps gameplay, frame picker, dialogs, and drag preview 
   await page.mouse.move(b.x, b.y, { steps: 5 });
   const ghost = game.locator('.drag-ghost');
   assert.ok(await ghost.isVisible(), 'drag preview is inside the fullscreen element');
+  assert.equal(await ghost.locator('rect[stroke="none"]').count(), 5, 'dragged pieces have no grid lines');
+  assert.equal(await ghost.locator('text').count(), 0, 'dragged pieces have no letter');
+  assert.equal(await ghost.locator('.piece-outline').count(), 1);
   await page.mouse.up();
   assert.equal(await game.locator('[data-piece="I"]').count(), 5);
   await game.getByRole('button', { name: 'Exit fullscreen' }).click();

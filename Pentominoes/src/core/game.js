@@ -25,7 +25,7 @@ export function gameCells({ pieces, stack, boardId }) {
 }
 
 // A stable, occupied square to use as the handle when selecting by tap/key.
-// It is marked with the piece letter; some pentominoes have an empty center.
+// Some pentominoes have an empty center, so use an occupied square.
 export function handleSquare(points) {
   const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
   const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;

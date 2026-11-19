@@ -571,3 +571,26 @@ test('each frame resumes its game after switching, reloading and starting over e
   await choose('8×8 · Center');
   assert.equal(await game.locator('.field-piece').count(), 0, 'reset remains saved');
 });
+
+test('playing pieces are solid silhouettes with outlines while the empty board grid remains visible', async (t) => {
+  const page = await openPhone(t);
+  const { game, tile, cell, action } = tools(page);
+  assert.equal(await game.locator('#field-squares path').count(), 1, 'empty board keeps its grid');
+  await tile('P').click();
+  await cell(22).click();
+  await tile('X').click();
+  const pieces = game.locator('.field-piece');
+  assert.equal(await pieces.count(), 2);
+  for (const piece of await pieces.all()) {
+    assert.equal(await piece.locator('text, circle').count(), 0);
+    assert.equal(await piece.locator('rect[stroke="none"]').count(), 5, 'no interior cell strokes');
+    assert.equal(await piece.locator('.piece-outline').count(), 1, 'outer outline remains');
+    assert.notEqual(await piece.locator('.piece-outline').getAttribute('stroke'), 'none');
+  }
+  await action(turnRight).click();
+  assert.equal(await game.locator('.field-piece[data-letter="X"] rect[stroke="none"]').count(), 5);
+  await game.getByRole('button', { name: 'Enter fullscreen' }).click();
+  assert.equal(await game.locator('.field-piece[data-letter="P"] text').count(), 0);
+  assert.equal(await game.locator('.field-piece[data-letter="P"] .piece-outline').count(), 1);
+  await game.getByRole('button', { name: 'Exit fullscreen' }).click();
+});

@@ -127,10 +127,6 @@
     box-shadow: inset 0 0 0 1px var(--accent);
   }
 }
-.piece-monogram {
-  font: 500 3.7px var(--mono);
-  pointer-events: none;
-}
 .field-piece .piece-outline,
 .drag-ghost .piece-outline {
   stroke-width: 0.42;

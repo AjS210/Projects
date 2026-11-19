@@ -66,25 +66,12 @@ const transforms = [
 ];
 const rowLabel = (y) => String.fromCharCode(65 + y);
 const locationName = (x, y) => `${rowLabel(y)}${x + 1}`;
-function MarkedPiece({ letter, points, mini = false }) {
+function TrayPiece({ letter, points }) {
   const [x, y] = handleSquare(points);
   return (
     <>
       <Blocks letter={letter} points={points} unit={UNIT} />
-      {mini ? (
-        <circle cx={(x + 0.5) * UNIT} cy={(y + 0.5) * UNIT} r="1.1" fill={PIECES[letter].ink} />
-      ) : (
-        <text
-          x={(x + 0.5) * UNIT}
-          y={(y + 0.5) * UNIT}
-          className="piece-monogram"
-          fill={PIECES[letter].ink}
-          textAnchor="middle"
-          dominantBaseline="central"
-        >
-          {letter}
-        </text>
-      )}
+      <circle cx={(x + 0.5) * UNIT} cy={(y + 0.5) * UNIT} r="1.1" fill={PIECES[letter].ink} />
     </>
   );
 }
@@ -103,7 +90,7 @@ function DragGhost({ points, preview, container }) {
         }}
         viewBox={`0 0 ${w * UNIT} ${h * UNIT}`}
       >
-        <MarkedPiece letter={preview.letter} points={points} />
+        <Blocks letter={preview.letter} points={points} unit={UNIT} gridLines={false} />
       </svg>
     </div>,
     container ?? document.body,
@@ -309,7 +296,7 @@ export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, o
                     opacity={preview?.letter === l ? 0.3 : 1}
                     transform={`translate(${pieces[l].at[0] * UNIT} ${pieces[l].at[1] * UNIT})`}
                   >
-                    <MarkedPiece letter={l} points={pieces[l].points} />
+                    <Blocks letter={l} points={pieces[l].points} unit={UNIT} gridLines={false} />
                   </g>
                 ))}
               </svg>
@@ -416,7 +403,7 @@ export function GameBoard({ game, onChange, onSwitchFrame, collection, onSave, o
                   {at && <Check size={12} className="tray-check" />}
                   <svg aria-hidden="true" viewBox="0 0 44 44">
                     <g transform={`translate(${(44 - w * UNIT) / 2} ${(44 - h * UNIT) / 2})`}>
-                      <MarkedPiece letter={l} points={points} mini />
+                      <TrayPiece letter={l} points={points} />
                     </g>
                   </svg>
                 </button>
