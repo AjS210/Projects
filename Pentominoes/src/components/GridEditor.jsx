@@ -60,7 +60,7 @@ export function GridEditor({ cells, onClose, onApply }) {
             aria-label={`Paint with ${l}`}
             aria-pressed={brush === l}
             className={`brush ${brush === l ? 'selected' : ''}`}
-            style={{ '--piece-fill': PIECES[l].color, '--piece-ink': PIECES[l].ink }}
+            style={{ '--piece-fill': PIECES[l].color, '--piece-ink': PIECES[l].ink, '--piece-outline': PIECES[l].outline ?? PIECES[l].ink }}
             onClick={() => setBrush(l)}
           >
             {l}

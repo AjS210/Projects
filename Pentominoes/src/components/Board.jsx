@@ -105,7 +105,7 @@ export function Board({
               width={u}
               height={u}
               fill={piece?.color || (holes.has(i) ? '#747b7d' : 'var(--well)')}
-              stroke={piece?.ink || 'var(--line-strong)'}
+              stroke={piece?.outline || piece?.ink || 'var(--line-strong)'}
               strokeWidth=".7"
               strokeOpacity=".42"
             />

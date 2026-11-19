@@ -105,3 +105,17 @@ test('backups round-trip names and grids; malformed backups cannot be merged', (
   assert.throws(() => parseImport('{"version":1,"solutions":[{"cells":"no"}]}'), /not a valid/);
   assert.throws(() => parseImport('{"version":2}'), /not a PentoLog/);
 });
+
+test('gameplay colors are vivid while the dark P outline is independent of its readable white letter', async () => {
+  const { LID_COLORS } = await import('../src/core/lidColors.js');
+  const saturation = (hex) => {
+    const rgb = [...Buffer.from(hex.slice(1), 'hex')];
+    const max = Math.max(...rgb), min = Math.min(...rgb);
+    return max === min ? 0 : (max - min) / (255 - Math.abs(max + min - 255));
+  };
+  for (const letter of ['F', 'N', 'T', 'U', 'W', 'X', 'Z'])
+    assert.ok(saturation(PIECES[letter].color) > saturation(LID_COLORS[letter]), `${letter} is more vivid`);
+  assert.equal(PIECES.P.color, LID_COLORS.P);
+  assert.equal(PIECES.P.ink, '#ffffff', 'P letter stays legible');
+  assert.notEqual(PIECES.P.outline, PIECES.P.ink, 'P uses a dark outline, not white');
+});

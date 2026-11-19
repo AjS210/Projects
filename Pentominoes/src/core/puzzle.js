@@ -3,20 +3,20 @@ export const ROWS = 6;
 export const COLS = 10;
 export const LETTERS = [...'FILNPTUVWXYZ'];
 export const BLANK = '.'.repeat(ROWS * COLS);
-// Display swatches sampled from the product lid. Recognition uses shapes, not this palette.
+// Vibrant display swatches retain the lid’s color families. Recognition uses shapes, not this palette.
 export const PIECES = {
-  F: { shape: ['.XX', 'XX.', '.X.'], color: '#64a57d', ink: '#122719' },
+  F: { shape: ['.XX', 'XX.', '.X.'], color: '#35d27c', ink: '#122719' },
   I: { shape: ['XXXXX'], color: '#fefefc', ink: '#474540' },
   L: { shape: ['X.', 'X.', 'X.', 'XX'], color: '#c7c8ca', ink: '#32343a' },
-  N: { shape: ['XX..', '.XXX'], color: '#8073a2', ink: '#0c0715' },
-  P: { shape: ['XX', 'XX', 'X.'], color: '#606060', ink: '#ffffff' },
-  T: { shape: ['XXX', '.X.', '.X.'], color: '#fde164', ink: '#473609' },
-  U: { shape: ['X.X', 'XXX'], color: '#d06261', ink: '#2c1012' },
-  V: { shape: ['X..', 'X..', 'XXX'], color: '#efdeb2', ink: '#4c4027' },
-  W: { shape: ['X..', 'XX.', '.XX'], color: '#6684cc', ink: '#0d1830' },
-  X: { shape: ['.X.', 'XXX', '.X.'], color: '#fc9860', ink: '#492715' },
+  N: { shape: ['XX..', '.XXX'], color: '#a678e0', ink: '#0c0715' },
+  P: { shape: ['XX', 'XX', 'X.'], color: '#606060', ink: '#ffffff', outline: '#191b1c' },
+  T: { shape: ['XXX', '.X.', '.X.'], color: '#ffdb38', ink: '#473609' },
+  U: { shape: ['X.X', 'XXX'], color: '#f2525d', ink: '#2c1012' },
+  V: { shape: ['X..', 'X..', 'XXX'], color: '#f3dba5', ink: '#4c4027' },
+  W: { shape: ['X..', 'XX.', '.XX'], color: '#5793fa', ink: '#0d1830' },
+  X: { shape: ['.X.', 'XXX', '.X.'], color: '#ff914a', ink: '#492715' },
   Y: { shape: ['.X..', 'XXXX'], color: '#8d8e90', ink: '#1a1c23' },
-  Z: { shape: ['XX.', '.X.', '.XX'], color: '#8e7169', ink: '#080504' },
+  Z: { shape: ['XX.', '.X.', '.XX'], color: '#bb806c', ink: '#080504' },
 };
 // Pack-away solution, in the lid's orientation: far edge first, front edge last.
 export const SAMPLE =

@@ -6,11 +6,11 @@ import {
   BLANK,
   canonicalKey,
   LETTERS,
-  PIECES,
   SAMPLE,
   validateBoard,
   variants,
 } from '../src/core/puzzle.js';
+import { LID_COLORS } from '../src/core/lidColors.js';
 import { FULL_FRAME, goodFrame, projector, readFrame, scanImage } from '../src/core/recognition.js';
 
 // Test-only camera input. The app ships the pack-away *cells*, not this JPEG.
@@ -77,7 +77,7 @@ test('automatically finds and reads a perspective photograph from its pixels', (
   assert.equal(result.found, 12);
   assert.equal(result.cells, SAMPLE);
 });
-test('the sample frame and display swatches match the pack-away solution on the lid', () => {
+test('the sample frame and physical lid colors match the pack-away solution', () => {
   const image = loadSample();
   assert.deepEqual([image.width, image.height], [width, height]);
   const rows = ['UUXTTTFFWW', 'UXXXTFFWWN', 'UUXLTZFWNN', 'LLLLYZZZNV', 'PPPYYYYZNV', 'PPIIIIIVVV'];
@@ -85,13 +85,13 @@ test('the sample frame and display swatches match the pack-away solution on the 
   assert.equal(readFrame(image, sampleFrame).cells, SAMPLE);
 
   // The reader checks shapes, so a photo with two piece colors swapped could still
-  // pass recognition. Compare each cell face to its UI swatch, allowing for grain and light.
+  // pass recognition. Compare each cell face to the physical lid reference color, allowing for grain and light.
   const project = projector(sampleFrame);
   for (const [i, letter] of [...SAMPLE].entries()) {
     const [x, y] = project(((i % 10) + 0.5) / 10, (Math.floor(i / 10) + 0.5) / 6);
     const pixel =
       4 * (Math.round(y * (image.height - 1)) * image.width + Math.round(x * (image.width - 1)));
-    const rgb = Buffer.from(PIECES[letter].color.slice(1), 'hex');
+    const rgb = Buffer.from(LID_COLORS[letter].slice(1), 'hex');
     assert.ok(
       rgb.every((v, c) => Math.abs(v - image.data[pixel + c]) <= 20),
       `Cell ${i}: ${letter}`,
